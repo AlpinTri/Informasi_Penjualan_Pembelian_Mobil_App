@@ -14,6 +14,17 @@ function find(kodePaket) {
   return result;
 }
 
+function search(q) {
+  const query = `SELECT * FROM paket_kredit 
+                WHERE kode_paket LIKE '%${q}%' 
+                OR uang_muka LIKE '%${q}%' 
+                OR bunga LIKE '%${q}%' 
+                OR tenor LIKE '%${q}%'`;
+  
+  const result = dbPool.execute(query);
+  return result;
+}
+
 function create({ kodePaket, uangMuka, bunga, tenor, createdAt, updatedAt }) {
   const query = `INSERT INTO paket_kredit (kode_paket, uang_muka, bunga, tenor, created_at, updated_at)
                 VALUES ('${kodePaket}', '${uangMuka}', '${bunga}', '${tenor}', '${createdAt}', '${updatedAt}')`;
@@ -39,6 +50,7 @@ function remove(kodePaket) {
 
 module.exports = {
   get,
+  search,
   find,
   create,
   update,

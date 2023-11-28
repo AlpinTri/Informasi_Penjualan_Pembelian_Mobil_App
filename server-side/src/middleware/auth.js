@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 
 function authentication(req, res, next) {
   try {
-    const header = req.headers.authorization;
+    const header = req.headers.authorization || req.headers.Authorization;
 
     if (!header) {
       res.status(401).json({
@@ -35,7 +35,7 @@ function authentication(req, res, next) {
 
 function adminAndFinance(req, res, next) {
   try {
-    const header = req.headers.authorization;
+    const header = req.headers.authorization || req.headers.Authorization;
     const token = header.split(' ')[1];
 
     const { status } = jwt.decode(token);
@@ -56,7 +56,7 @@ function adminAndFinance(req, res, next) {
 
 function adminAndSales(req, res, next) {
   try {
-    const header = req.headers.authorization;
+    const header = req.headers.authorization || req.headers.Authorization;
     const token = header.split(' ')[1];
 
     const { status } = jwt.decode(token);
@@ -77,7 +77,7 @@ function adminAndSales(req, res, next) {
 
 function admin(req, res, next) {
   try {
-    const header = req.headers.authorization;
+    const header = req.headers.authorization || req.headers.Authorization;
     const token = header.split(' ')[1];
 
     const { status } = jwt.decode(token);

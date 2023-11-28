@@ -2,8 +2,8 @@
   <section>
     <div class="container">
       <div class="container-top">
-        <span class="header">User</span>
-        <RouterLink class="add-icon-wrapper" :to="{name: 'create user'}">
+        <span class="header">Pembelian Cash</span>
+        <RouterLink class="add-icon-wrapper" :to="{name: 'create cash transaction'}">
           <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </RouterLink>
         <form class="input-group">
@@ -12,29 +12,33 @@
         </form>
       </div>
       <ul class="list-item-container">
-        <li class="list-item" v-for="user in users" :key="user.kode_user">
+        <li class="list-item" v-for="data in cash" :key="data.kode_cash">
           <div class="container-detail-data">
             <div class="detail-data">
-              <div class="header-data">Nama User</div>
-              <div class="data">{{ user.nama }}</div>
+              <div class="header-data">Nama Customer</div>
+              <div class="data">{{ data.nama }}</div>
             </div>
             <div class="detail-data">
               <div class="header-data">Nomor Telepon</div>
-              <div class="data">{{ user.no_telp }}</div>
+              <div class="data">{{ data.no_telp }}</div>
             </div>
             <div class="detail-data">
-              <div class="header-data">Jenis Kelamin</div>
-              <div class="data">{{ user.jenis_kelamin }}</div>
+              <div class="header-data">Type Mobil</div>
+              <div class="data">{{ data.type }}</div>
             </div>
             <div class="detail-data">
-              <div class="header-data">Status User</div>
-              <div class="data">{{ user.status }}</div>
+              <div class="header-data">Cash</div>
+              <div class="data">{{ rupiah.format(data.cash_bayar) }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Tanggal dibayar</div>
+              <div class="data">{{ data.tanggal }}</div>
             </div>
           </div>
-          <RouterLink class="detail-icon" :to="{name: 'detail user', params: {kodeUser: user.kode_user}}">
+          <RouterLink class="detail-icon" :to="{name: 'detail cash transaction', params: {kodeTransaksi: data.kode_cash}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg @click="removeUser(user.kode_user)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg @click="removeTransaction(data.kode_cash)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
@@ -42,8 +46,8 @@
   <!-- <section>
     <div class="container-action">
       <div class="wrapper">
-        <div class="label-page">User</div>
-        <RouterLink :to="{name: 'create user'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
+        <div class="label-page">Pembelian Cash</div>
+        <RouterLink :to="{name: 'create cash transaction'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
       </div>
       <div class="input-group">
         <img class="search-icon" src="../../../../public/icons/search.png" alt="">
@@ -51,36 +55,64 @@
       </div>
     </div>
     <ul>
-      <li v-for="user in users" :key="user.kode_user">
+      <li v-for="transaction in cash" :key="transaction.kode_cash">
         <div class="container-detail">
           <div>
-            <div class="label">Nama User</div>
-            <h4>{{ user.nama }}</h4>
+            <div class="label">Nama Customer</div>
+            <h4>{{ transaction.nama }}</h4>
           </div>
           <div>
-            <div class="label">Jenis Kelamin</div>
-            <h4>{{ user.jenis_kelamin }}</h4>
+            <div class="label">Nomor Telepon</div>
+            <h4>{{ transaction.no_telp }}</h4>
           </div>
           <div>
-            <div class="label">No Telp</div>
-            <h4>{{ user.no_telp }}</h4>
+            <div class="label">Type Mobil</div>
+            <h4>{{ transaction.type }}</h4>
           </div>
           <div>
-            <div class="label">Status</div>
-            <h4>{{ user.status }}</h4>
+            <div class="label">Tanggal Bayar</div>
+            <h4>{{ transaction.tanggal }}</h4>
           </div>
         </div>
-        <RouterLink :to="{name: 'detail user', params: {kodeUser: user.kode_user}}">
+        <RouterLink :to="{name: 'detail cash transaction', params: {kodeTransaksi: transaction.kode_cash}}">
           <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
         </RouterLink>
-        <img @click="removeUser(user.kode_user)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
+        <img @click="removeCustomer(transaction.kode_cash)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
       </li>
+        <li v-for="transaction in cash" :key="transaction.kode_cash">
+        <div class="container-detail">
+          <div>
+            <div class="label">Nama Customer</div>
+            <h4>{{ transaction.nama }}</h4>
+          </div>
+          <div>
+            <div class="label">Nomor Telepon</div>
+            <h4>{{ transaction.no_telp }}</h4>
+          </div>
+          <div>
+            <div class="label">Type Mobil</div>
+            <h4>{{ transaction.type }}</h4>
+          </div>
+          <div>
+            <div class="label">Harga</div>
+            <h4>{{ transaction.harga }}</h4>
+          </div>
+          <div>
+            <div class="label">Cash Bayar</div>
+            <h4>{{ transaction.cash_bayar }}</h4>
+          </div>
+        </div>
+        <RouterLink :to="{name: 'detail customer', params: {nik: customer.nik}}">
+          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
+        </RouterLink>
+        <img @click="removeCustomer(customer.nik)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
+      </li> 
     </ul>
   </section> -->
 </template>
 
 <script setup>
-import axios, { AxiosError } from "axios";
+import axios from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
 import { useRoute, useRouter } from "vue-router";
@@ -90,25 +122,34 @@ const route = useRoute();
 const router = useRouter();
 
 const keyword = ref(null);
-const users = reactive([]);
+const cash = reactive([]);
 
+// Format IDR
+const rupiah = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR'
+});
 
-
-async function removeUser(kode) {
+async function removeTransaction(kodeCash) {
   try {
+    console.log(kodeCash)
     const response = await axios({
       method: 'DELETE',
-      url: `http://localhost:5000/api/users/${kode}`,
+      url: `http://localhost:5000/api/cashes/${kodeCash}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`,
+        authorization: `Bearer ${store.getAccessToken}`
+      }
+    });
+
+    cash.forEach((item, index) => {
+      if (item.kode_cash === kodeCash) {
+        cash.splice(index, 1);
       }
     })
 
-    users.map((user, index) => user.kode_user === kode ? users.splice(index, 1) : null);
-    console.log(response);
-    console.log(users)
+    console.log(response)
   } catch (err) {
-    console.log(err);
+    console.log(err)
   }
 }
 
@@ -120,41 +161,37 @@ onMounted(async () => {
       const response = await axios({
         baseURL: 'http://localhost:5000/api',
         method: 'GET',
-        url: '/users',
+        url: '/cashes/transactions',
         headers: {
-          Authorization: `Bearer ${store.getAccessToken}`,
+          authorization: `Bearer ${store.getAccessToken}`
         }
       });
-  
+
       const data = response.data.data;
-      data.forEach(user => users.push(user));
 
+      data.forEach(item => cash.push(item));
       return;
-
     }
 
     const response = await axios({
       baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `/users?q=${q}`,
+      url: `/cashes?q=${q}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`,
+        Authorization: `Bearer ${store.getAccessToken}`
       }
     });
-  
+
     const data = response.data.data;
-    data.forEach(user => users.push(user));
+
+    data.forEach(item => cash.push(item));
 
     keyword.value = q;
 
   } catch (err) {
-    if (err instanceof AxiosError) {
-      console.log(err)
-    } else {
-      console.log(err.message)
-    }
+    console.log(err)
   }
-});
+})
 </script>
 
 <style scoped>
@@ -235,7 +272,7 @@ section{
   display: flex;
   flex-direction: column;
   gap: 5px;
-  height: 55px;
+  min-height: 55px;
 }
 .header-data{
   font-size: 13px;
@@ -262,102 +299,4 @@ section{
   top: 0;
   transform: translate(50%, -50%);
 }
-
-
-/* section{
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 95%;
-  margin-inline: auto;
-}
-.add-icon{
-  padding: 5px;
-  border-radius: 5px;
-  background-color: #2753d8;
-}
-.wrapper{
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-.label-page{
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-.container-action{
-  display: flex;
-  gap: 1.5rem;
-}
-.input-group{
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, .1);
-  padding: 5px;
-  padding-inline: 10px;
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-}
-.input-group > input{
-  padding: 5px;
-  width: 400px;
-  border: none;
-  outline: none;
-  font-family: Roboto;
-  font-size: 1rem;
-}
-
-ul{
-  width: 98%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-ul > li{
-  display: flex;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  position: relative;
-  align-items: center;
-  justify-content: space-between;
-  gap: 3rem;
-}
-ul > li:hover{
-  background-color: #fff;
-  box-shadow: 0 0 10px #cfdae4;
-}
-.delete-icon{
-  padding: 5px;
-  border-radius: 100%;
-  border: 1px solid rgba(0, 0, 0, .1);
-  background-color: #f8f9fa;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transform: translate(50%, -50%);
-}
-.detail-chevron{
-  padding: 5px;
-  border-radius: 100%;
-  background-color: #f8f9fa;
-}
-.container-detail{
-  display: flex;
-  width: 100%;
-  height: 50px;
-}
-.container-detail > div{
-  width: 25%;
-  height: 60px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-}
-.label{
-  font-size: 14px;
-  color: rgba(0, 0, 0, .5)
-} */
 </style>

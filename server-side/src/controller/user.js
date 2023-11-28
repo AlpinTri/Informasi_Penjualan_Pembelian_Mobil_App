@@ -1,17 +1,28 @@
 const bcrypt = require('bcrypt');
 
-const { get, find, create, update, remove } = require('../models/users')
+const { get, find, create, update, remove, search } = require('../models/users')
 
-// Models
+
 async function getUsers(req, res) {
   try {
+    const { q } = req.query;
     
-    const [data] = await get();
-    console.log(data)
+    if (!q) {
+      const [data] = await get();
+  
+      res.status(200).json({
+        status: 200,
+        message: 'OK',
+        data: data
+      });
+      return;
+    }
+
+    const [data] = await search(q);
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     });
 

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { getCredits, findCredit, createCredit, updateCredit, deleteCredit } = require('../controller/credit');
+const { getCredits, findCredit, createCredit, updateCredit, deleteCredit, getTransactions, getSpecificTransaction } = require('../controller/credit');
 const { upload } = require('../middleware/multer/creditMulter');
 
 // Import Middleware
@@ -13,6 +13,8 @@ router.use(authentication, adminAndSales)
 
 // get methods
 router.get('/', getCredits);
+router.get('/transactions', getTransactions);
+router.get('/transactions/:kodeKredit', getSpecificTransaction);
 router.get('/:kodeKredit', findCredit);
 
 // post methods

@@ -18,7 +18,6 @@ async function login(req, res) {
       return;
     }
 
-    console.log(req.body)
     const [result] = await find(parseInt(kode));
 
     if (!result.length) {
@@ -41,6 +40,7 @@ async function login(req, res) {
 
     const token = jwt.sign({
       id: result[0].id,
+      name: result[0].nama,
       status: result[0].status
     }, process.env.ACCESS_TOKEN_SECRET, {
       expiresIn: '6h'

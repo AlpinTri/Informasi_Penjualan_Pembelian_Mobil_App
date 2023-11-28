@@ -3,45 +3,56 @@ import { ref, reactive, computed } from 'vue'
 
 
 const userAuthStore = defineStore('auth', () => {
+  // States
   const userLogin = reactive({
     kode: '',
-    name: ''
+    name: '',
+    status: ''
   });
-  const accessToken = ref('');
 
+  // Getters
   const getLoginUser = computed(() => ({
     kode: userLogin.kode,
-    name: userLogin.name
+    name: userLogin.name,
+    status: userLogin.status
   }));
 
   const getAccessToken = computed(() => {
-    accessToken.value = JSON.parse(localStorage.getItem('access-token'));
-    return accessToken.value;
+    const accessToken = JSON.parse(localStorage.getItem('access-token')) || null;
+    return accessToken;
   });
 
-  // 
+  // Actions
   function setToken(token) {
-    accessToken.value = token;
-    localStorage.setItem('access-token', JSON.stringify(accessToken.value));
+    localStorage.setItem('access-token', JSON.stringify(token));
   }
 
-  function setLoginUser({kode, name}) {
-    userLogin.kode = kode
-    userLogin.name = name
-    localStorage.setItem('user-login', JSON.stringify(userLogin));
+  function setLoginUser({kode, name, status}) {
+    userLogin.kode = kode;
+    userLogin.name = name;
+    userLogin.status = status;
   }
   
   function logout() {
-    
+    localStorage.removeItem('access-token');
+    userLogin.kode = null;
+    userLogin.name = null;
+    userLogin.status = null;
+
+    if (!getAccessToken()) {
+      return false;
+    }
+
+    return true;
   }
 
   return {
     userLogin,
-    accessToken,
     getLoginUser,
     getAccessToken,
     setToken,
-    setLoginUser
+    setLoginUser,
+    logout,
   }
 })
 

@@ -1,8 +1,22 @@
 const { calculateInstallment } = require('../config/installment');
-const { get, find, create, update, remove } = require('../models/installmentPayments');
+const { get, find, create, update, remove, getByKodeKredit } = require('../models/installmentPayments');
 
 async function getInstallmentPayments(req, res) {
   try {
+
+    const { kode_kredit, sort } = req.query;
+    console.log(kode_kredit, sort)
+    if (kode_kredit && sort) {
+      const [data] = await getByKodeKredit(kode_kredit, sort);
+
+      res.status(200).json({
+        status: 200,
+        message: 'Ok',
+        data: data
+      });
+      return;
+    }
+
     const [data] = await get();
 
     res.status(200).json({
@@ -51,7 +65,7 @@ async function createInstallmentPayment(req, res) {
     const date = new Date();
     payload.createdAt = date.toLocaleString('en-GB').replaceAll('/', '-').replace(',', '');
     payload.updatedAt = payload.createdAt;
-    payload.tanggal = date.toLocaleString('id-ID').substring(0, 10).replaceAll('/', '-');
+    payload.tanggal = date.toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric',});
 
     // Kode Pembayaran Cicilan
     payload.kodeCicilan = 'CC-' + date.getTime();
@@ -99,10 +113,10 @@ async function deleteInstallmentPayment(req, res) {
     const { kodeCicilan } = req.params;
 
     const [cicilan] = await find(kodeCicilan);
-
+    console.log(cicilan);
     if (!cicilan.length) {
-      res.status(401).json({
-        status: 401,
+      res.status(404).json({
+        status: 404,
         message: 'Data not found'
       })
       return;

@@ -16,6 +16,17 @@ function find(kodeUser) {
   return data;
 }
 
+function search(q) {
+  const query = `SELECT * FROM user 
+                WHERE kode_user LIKE '%${q}%' 
+                OR nama LIKE '%${q}%' 
+                OR jenis_kelamin LIKE '%${q}%' 
+                OR no_telp LIKE '%${q}%'`;
+  
+  const result = dbPool.execute(query);
+  return result;
+}
+
 function create({kodeUser, nama, jenisKelamin, telp, password, status, createdAt, updatedAt}) {
   const query = `INSERT INTO user (kode_user, nama, jenis_kelamin, no_telp, password, status, created_at, updated_at)
                 VALUES ('${kodeUser}','${nama}','${jenisKelamin}','${telp}','${password}','${status}','${createdAt}','${updatedAt}')`;
@@ -42,6 +53,7 @@ function remove(kodeUser) {
 
 module.exports = {
   get,
+  search,
   find,
   create,
   remove,

@@ -1,14 +1,26 @@
-const { get, find, create, update, remove } = require('../models/customers');
+const { get, find, create, update, remove, search } = require('../models/customers');
 const { removeImage } = require('../middleware/unlink');
 
 async function getCustomers(req, res) {
   try {
-    
-    const [data] = await get();
+    const { q } = req.query;
+
+    if (!q) {
+      const [data] = await get();
+  
+      res.status(200).json({
+        status: 200,
+        message: 'OK',
+        data: data
+      });
+      return;
+    }
+
+    const [data] = await search(q);
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     });
 
@@ -101,13 +113,34 @@ async function updateCustomer(req, res) {
     const date = new Date();
     data.updatedAt = date.toLocaleString('en-GB').replaceAll('/','-').replace(',', '');
 
+    if (!req.file) {
+      // Update
+      const [result] = await update(data);
+
+      if (!result.changedRows) {
+        res.status(500).json({
+          status: 500,
+          message: 'Failed to insert',
+        });
+
+        return;
+      }
+
+      res.status(201).json({
+        status: 201,
+        message: 'Ok',
+        data: data
+      });
+
+      return;
+    }
+
     // Image
     data.foto = req.file.filename;
 
     // Update
     const [result] = await update(data);
 
-    console.log(result)
     // Is Updated??
     if (!result.changedRows) {
       res.status(500).json({
@@ -134,7 +167,6 @@ async function updateCustomer(req, res) {
         message: 'Data updated, but there was an error removing the associated file.'
       });
     } else {
-      
       res.status(500).json({
         status: 500,
         message: 'Internal server error',

@@ -1,16 +1,30 @@
-const { get, find, create, update, remove } = require('../models/cars');
+const { get, find, create, update, remove, search } = require('../models/cars');
 const { removeImage } = require('../middleware/unlink');
 
 async function getCars(req, res) {
   try {
-    
-    const [data] = await get();
-    
+
+    const { q } = req.query;
+
+    if (!q) {
+      const [data] = await get();
+      
+      res.status(200).json({
+        status: 200,
+        message: 'ok',
+        data: data
+      })
+      return;
+    }
+
+    const [data] = await search(q)
+
     res.status(200).json({
       status: 200,
       message: 'ok',
       data: data
     })
+    return;
 
   } catch (err) {
     res.status(500).json({
@@ -22,7 +36,6 @@ async function getCars(req, res) {
 
 async function findCar(req, res) {
   try {
-    
     const { kodeMobil } = req.params;
     const [data] = await find(kodeMobil);
 
@@ -97,9 +110,9 @@ async function updateCar(req, res) {
     
     const data = req.body;
     const { kodeMobil } = req.params;
-
+    console.log(data);
     // Find Kode Mobil
-    const [car] = await find(kodeMobil);
+    const [car] = await find(kodeMobil)
     if (!car.length) {
       res.status(404).json({
         status: 404,
@@ -110,16 +123,33 @@ async function updateCar(req, res) {
     }
 
     data.kodeMobil = kodeMobil;
-    
-    // Image
-    data.gambar = req.file.filename;
-    
+
     // Timestamps
     const date = new Date()
     data.updatedAt = date.toLocaleString('en-GB').replaceAll('/','-').replace(',', '');
     
-    // Delete Image Now
-    await removeImage('car',car[0].gambar);
+    if (!req.file) {
+      // Update
+      const [result] = await update(data);
+
+      if (!result.changedRows) {
+        res.status(500).json({
+          status: 500,
+          message: 'failed to update'
+        });
+
+        return;
+      }
+
+      // Success
+      res.status(201).json({
+        status: 201,
+        message: 'Ok'
+      });
+      return;
+    }
+    // Image
+    data.gambar = req.file.filename;
 
     // Update
     const [result] = await update(data);
@@ -133,6 +163,9 @@ async function updateCar(req, res) {
 
       return;
     }
+
+    // Delete Image Now
+    await removeImage('car',car[0].gambar);
 
     // Success
     res.status(201).json({

@@ -10,7 +10,7 @@ const router = createRouter({
       name: 'home',
       component: HomeView,
       meta: {
-        requireAuth: true
+        requireAuth: false
       }
     },
     {
@@ -20,7 +20,7 @@ const router = createRouter({
       component: () => import('../views/AdminView.vue'),
       meta: {
         requireAuth: true,
-        requireAdmin: true
+        requireAdmin: ['Super Admin', 'Sales', 'Finance']
       },
       children: [
         {
@@ -29,6 +29,7 @@ const router = createRouter({
           component: () => import('../views/Admin/DashboardView.vue'),
           meta: {
             requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
           }
         },
 
@@ -52,12 +53,21 @@ const router = createRouter({
           }
         },
         {
+          path: 'master/cars/:kodeMobil/edit',
+          name: 'edit car',
+          component: () => import('../views/Admin/Cars/EditCarView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin']
+          }
+        },
+        {
           path: 'master/cars/:kodeMobil',
           name: 'detail car',
           component: () => import('../views/Admin/Cars/DetailCarView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
           }
         },
 
@@ -118,6 +128,15 @@ const router = createRouter({
             requireAdmin: ['Super Admin', 'Sales']
           }
         },
+        {
+          path: 'master/customers/:nik/edit',
+          name: 'edit customer',
+          component: () => import('../views/Admin/Customers/EditCustomerView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
 
         // Credit Package Path
         {
@@ -146,9 +165,69 @@ const router = createRouter({
             requireAuth: true,
             requireAdmin: ['Super Admin']
           }
-        }
+        },
+
+        // Cash Path
+        {
+          path: 'transactions/cash',
+          name: 'cash transactions',
+          component: () => import('../views/Admin/Cash/CashView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
+        {
+          path: 'transactions/cash/create',
+          name: 'create cash transaction',
+          component: () => import('../views/Admin/Cash/CreateCashView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
+        {
+          path: 'transactions/cash/:kodeTransaksi',
+          name: 'detail cash transaction',
+          component: () => import('../views/Admin/Cash/DetailCashTransactionView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
+
+        // Credit Transactions
+        {
+          path: 'transactions/credit',
+          name: 'credit transactions',
+          component: () => import('../views/Admin/Credit/CreditTransactionsView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
+        {
+          path: 'transactions/credit/create',
+          name: 'create credit transaction',
+          component: () => import('../views/Admin/Credit/CreateCreditTransactionView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
+        {
+          path: 'transactions/credit/:kodeTransaksi',
+          name: 'detail credit transaction',
+          component: () => import('../views/Admin/Credit/DetailCreditTransactionView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Sales']
+          }
+        },
       ]
     },
+
+
     {
       path: '/login',
       name: 'login',
@@ -161,9 +240,10 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  const storage = userAuthStore()
-  const token = storage.getAccessToken
+  const store = userAuthStore();
+
   let _next;
+
   if (to.meta.requireAuth && !token) {
     _next = { name: 'login' }
   } else if (to.meta.requireGuest && token) {

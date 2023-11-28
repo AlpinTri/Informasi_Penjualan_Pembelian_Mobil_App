@@ -1,12 +1,25 @@
-const { get, find, create, update, remove } = require('../models/creditPackages');
+const { get, find, create, update, remove, search } = require('../models/creditPackages');
 
 async function getCreditPackages(req, res) {
   try {
-    const [data] = await get();
+    const { q } = req.query;
+
+    if (!q) {
+      const [data] = await get();
+  
+      res.status(200).json({
+        code: 200,
+        message: 'OK',
+        data: data
+      });
+      return;
+    }
+
+    const [data] = await search(q);
 
     res.status(200).json({
-      status: 200,
-      message: 'Ok',
+      code: 200,
+      message: 'OK',
       data: data
     });
 
@@ -142,7 +155,7 @@ async function deleteCreditPackage(req, res) {
 
     if (!creditPackage.length) {
       res.status(404).json({
-        status: 500,
+        status: 404,
         message: 'Data not found'
       });
 

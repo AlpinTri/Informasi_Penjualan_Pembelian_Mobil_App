@@ -1,17 +1,30 @@
 const { removeImage } = require('../middleware/unlink');
-const { get, find, create, update, remove } = require('../models/credits');
+const { get, find, create, update, remove, getLiteTransactions, getCompliteTransaction, search } = require('../models/credits');
+const cicilan = require('../models/installmentPayments');
 
 
 async function getCredits(req, res) {
   try {
-    const [data] = await get();
+    const { q } = req.query;
+
+    if (!q) {
+      const [data] = await get();
+  
+      res.status(200).json({
+        status: 200,
+        message: 'OK',
+        data: data
+      });
+      return;
+    }
+
+    const [data] = await search(q);
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     });
-
   } catch (error) {
     res.status(500).json({
       status: 500,
@@ -19,6 +32,63 @@ async function getCredits(req, res) {
     });
 
     console.log(err.message)
+  }
+}
+
+async function getTransactions(req, res) {
+  try {
+    const [data] = await getLiteTransactions();
+
+    if (!data.length) {
+      res.status(404).json({
+        code: 404,
+        message: 'Data not found'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      code: 200,
+      data: data
+    });
+  } catch (err) {
+    res.status(400).json({
+      code: 400,
+      message: 'Bad request'
+    });
+  }
+}
+
+async function getSpecificTransaction(req, res) {
+  try {
+    const { kodeKredit } = req.params;
+
+    const [data] = await getCompliteTransaction(kodeKredit);
+
+    console.log('pass')
+
+    if (!data.length) {
+      res.status(400).json({
+        code: 400,
+        message: 'Bad request'
+      });
+      return;
+    }
+
+    const [dataCicilan] = await cicilan.getByKodeKredit(kodeKredit, 1);
+
+    res.status(200).json({
+      code: 200,
+      data: {
+        detailKredit: data,
+        cicilan: dataCicilan
+      }
+    });
+  } catch (err) {
+    res.status(400).json({
+      code: 400,
+      message: 'Bad request'
+    });
   }
 }
 
@@ -49,6 +119,7 @@ async function createCredit(req, res) {
 
     const payload = req.body;
     
+    console.log(payload)
     // Add Timestamps
     const date = new Date();
     payload.createdAt = date.toLocaleString('en-GB').replaceAll('/', '-').replace(',', '');
@@ -60,10 +131,10 @@ async function createCredit(req, res) {
     payload.fcGaji = req.files.slipGaji[0].filename;
 
     // Kode Kredit (Unique)
-    payload.kodeKredit = 'INV' + date.getTime();
+    payload.kodeKredit = `TRXCRDT${date.getFullYear()}${date.getTime().toString().slice(3)}`;
 
     // Date
-    payload.tanggal = date.toLocaleString('id-ID').substring(0, 10).replaceAll('/', '-');
+    payload.tanggal = date.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', });
 
     
     const [result] = await create(payload)
@@ -201,6 +272,8 @@ async function deleteCredit(req, res) {
 
 module.exports = {
   getCredits,
+  getTransactions,
+  getSpecificTransaction,
   findCredit,
   createCredit,
   updateCredit,

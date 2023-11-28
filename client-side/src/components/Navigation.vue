@@ -21,16 +21,16 @@
           </RouterLink>
         </div>
         <div class="nav-item">
-          <div class="nav-button" @click="openNav(1)" :style="[route.path.split('/').includes('transaksi')  ? 'color: #2753d8; background-color: #fff;' : '']">
+          <div class="nav-button" @click="openNav(1)" :style="[route.path.split('/').includes('transactions')  ? 'color: #2753d8; background-color: #fff;' : '']">
             <div class="mark" :style="[route.path.split('/').includes('transaksi') ? 'background-color: #2753d8;' : '']"></div>
             <div class="nav-detail">
               <img src="../../public/icons/to-do-list.png" alt="">
-              <span>Master Data</span>
+              <span>Transaksi</span>
             </div>
             <img class="icon" src="../../public/icons/down-chevron.png" alt="" ref="chevron">
           </div>
           <ul class="nav-tree" ref="navTree">
-            <li class="link">Cash</li>
+            <RouterLink class="link" :to="{name: 'cash transactions'}" :style="[route.path.split('/').includes('cash') ? 'color: #82d114' : '']">Cash</RouterLink>
             <li class="link">Kredit</li>
           </ul>
         </div>

@@ -1,55 +1,70 @@
 <template>
   <section>
-    <div class="container-action">
-      <div class="wrapper">
-        <div class="label-page">Mobil</div>
-        <RouterLink :to="{name: 'create car'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
-      </div>
-      <div class="input-group">
-        <img class="search-icon" src="../../../../public/icons/search.png" alt="">
-        <input type="text" placeholder="Ketik kata kunci untuk mencari">
-      </div>
-    </div>
-    <ul >
-      <li v-for="car in cars" :key="car.kode_mobil">
-        <img class="image" :src="`http://localhost:5000/api/assets/images/cars/${car.gambar}`" alt="">
-        <div class="container-detail">
-          <div>
-            <div class="label">Merk</div>
-            <h4>{{ car.merk }}</h4>
-          </div>
-          <div>
-            <div class="label">Type</div>
-            <h4>{{ car.type }}</h4>
-          </div>
-          <div>
-            <div class="label">Warna</div>
-            <h4>{{ car.warna }}</h4>
-          </div>
-          <div>
-            <div class="label">Harga</div>
-            <h4>Rp {{ car.harga }}</h4>
-          </div>
-        </div>
-        <RouterLink :to="{name: 'detail car', params: {kodeMobil: car.kode_mobil}}">
-          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
+    <div class="container">
+      <div class="container-top">
+        <span class="header">Mobil</span>
+        <RouterLink class="add-icon-wrapper" :to="{name: 'create car'}">
+          <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </RouterLink>
-        <img @click="remove(car.kode_mobil)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
-      </li>
-    </ul>
+        <form class="input-group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#dadee0" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input name="q" class="input" type="text" placeholder="Ketik kata kunci untuk mencari" v-model="keyword">
+        </form>
+      </div>
+      <ul class="list-item-container">
+        <li class="list-item" v-for="car in cars" :key="car.kode_mobil">
+          <img class="image" alt="" :src="`http://localhost:5000/api/assets/images/cars/${car.gambar}`">
+          <div class="container-detail-data">
+            <div class="detail-data">
+              <div class="header-data">Type</div>
+              <div class="data">{{ car.type }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Merk</div>
+              <div class="data">{{ car.merk }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Warna</div>
+              <div class="data">{{ car.warna }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Harga</div>
+              <div class="data">{{ rupiah.format(car.harga) }}</div>
+            </div>
+          </div>
+          <RouterLink class="detail-icon" :to="{name: 'detail car', params: {kodeMobil: car.kode_mobil}}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
+          </RouterLink>
+          <svg @click="remove(car.kode_mobil)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
 <script setup>
 import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
-import { onMounted, reactive, onUpdated } from "vue";
-import { RouterLink } from "vue-router";
+import { onMounted, reactive, ref} from "vue";
+import { RouterLink, useRoute, useRouter } from "vue-router";
 
-const store = userAuthStore()
+const keyword = ref(null);
 
-const cars = reactive([])
+const route = useRoute();
+const router = useRouter();
+// User Store
+const store = userAuthStore();
 
+// Cars Data
+const cars = reactive([]);
+
+// Format IDR
+const rupiah = new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR'
+});
+
+// Delete Car Function
 async function remove(kode) {
   try {
     const response = await axios({
@@ -60,11 +75,9 @@ async function remove(kode) {
       }
     });
 
-    cars.map((car, index) => {
+    cars.forEach((car, index) => {
       car.kode_mobil == kode ? cars.splice(index, 1) : null;
     });
-
-    
   } catch (err) {
     if (err instanceof AxiosError) {
       console.log(err)
@@ -74,17 +87,34 @@ async function remove(kode) {
   }
 }
 
+
+// Mounted Events
 onMounted(async () => { 
   try {
+    const { q } = route.query;
+
+    if (!q || !q.trim()) {
+      const response = await axios({
+        method: 'GET',
+        url: 'http://localhost:5000/api/cars',
+      });
+
+      response.data.data.forEach(car => cars.push(car));
+      return;
+    }
+
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: 'http://localhost:5000/api/cars',
+      url: `/cars?q=${q}`,
+      headers: {
+        authorization: `Bearer ${store.getAccessToken}`
+      }
     });
 
-    if (response.status == 200) {
-      response.data.data.forEach(car => cars.push(car));
-    }
-    
+    response.data.data.forEach(car => cars.push(car));
+    keyword.value = q;
+
   } catch (err) {
     if (err instanceof AxiosError) {
       console.log(err)
@@ -97,6 +127,109 @@ onMounted(async () => {
 
 <style scoped>
 section{
+  width: calc(100% - 250px);
+  margin-left: 250px;
+  overflow-x: hidden;
+}
+.container{
+  width: 95%;
+  margin-inline: auto;
+  margin-top: calc(5%/2);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Main Content */
+.container-top{
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-inline: 1rem;
+}
+.add-icon{
+  box-sizing: content-box;
+  padding: 3px;
+  background-color: #2753d8;
+  border-radius: 8px;
+}
+.header{
+  font-weight: 600;
+  font-size: 20px;
+}
+.input{
+  padding: 10px;
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  width: 300px;
+}
+.input-group{
+  padding-inline: 5px;
+  border-radius: 8px;
+  border: 2px solid #f3f7fa;
+  display: flex;
+  align-items: center;
+}
+
+/* List Item */
+.list-item-container{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.list-item{
+  width: 100%;
+  padding: 7px;
+  background-color: #f3f7fa;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  gap: 1.5rem;
+}
+.container-detail-data{
+  display: flex;
+  flex-grow: 1;
+  gap: 1rem;
+}
+.detail-data{
+  width: calc(100%/4);
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.header-data{
+  font-size: 13px;
+  color: #adb5bd;
+}
+.data{
+  font-weight: 600;
+}
+.image{
+  width: 110.4px;
+  height: 73.6px;
+}
+.detail-icon{
+  align-self: center;
+}
+.delete-icon{
+  position: absolute;
+  box-sizing: content-box;
+  background-color: #f3f7fa;
+  border-radius: 999px;
+  border: 1px solid #6c757d;
+  padding: 2px;
+  right: 0;
+  top: 0;
+  transform: translate(50%, -50%);
+}
+.add-icon-wrapper{
+  display: flex;
+  align-items: center;
+}
+
+/* section{
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
@@ -193,5 +326,5 @@ ul > li:hover{
 }
 .label{
   font-size: 14px;
-}
+} */
 </style>

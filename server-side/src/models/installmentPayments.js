@@ -14,6 +14,18 @@ function find(kodeCicilan) {
   return result;
 }
 
+function getByKodeKredit(kodeKredit, type) {
+  let query;
+  if (type == 1) {
+    query = `SELECT * FROM pembayaran_cicilan WHERE kode_kredit = '${kodeKredit}' ORDER BY cicilan_ke ASC`;
+  } else {
+    query = `SELECT * FROM pembayaran_cicilan WHERE kode_kredit = '${kodeKredit}' ORDER BY cicilan_ke DESC`;
+  }
+
+  const result = dbPool.execute(query);
+  return result;
+}
+
 function create({ kodeCicilan, kodeKredit, jumlahCicilan, cicilanKe, sisaCicilan, totalSisa, tanggal, createdAt, updatedAt }) {
   const query = `INSERT INTO pembayaran_cicilan(kode_cicilan, kode_kredit, jumlah_cicilan, cicilan_ke, sisa_cicilan, total_sisa, tanggal, created_at, updated_at)
                 VALUES ('${kodeCicilan}','${kodeKredit}','${jumlahCicilan}','${cicilanKe}','${sisaCicilan}','${totalSisa}','${tanggal}','${createdAt}','${updatedAt}')`;
@@ -40,6 +52,7 @@ function remove(kodeCicilan) {
 module.exports = {
   get,
   find,
+  getByKodeKredit,
   create,
   update,
   remove

@@ -2,9 +2,9 @@
   <section>
     <div class="container">
       <div class="container-top">
-        <span class="domain">User</span>
+        <span class="domain"></span>
         <span class="slash">/</span>
-        <span class="codomain">Create</span>
+        <span class="codomain">Edit</span>
       </div>
       <div class="container-bottom">
         <form class="form" action="#" @submit.prevent="createUser">

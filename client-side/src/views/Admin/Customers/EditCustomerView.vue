@@ -2,18 +2,12 @@
   <section>
     <div class="container">
       <div class="container-top">
-        <div class="container-title-page">
-          <span class="domain">Customer</span>
-          <span class="slash">/</span>
-          <span class="codomain">Detail</span>
-        </div>
-        <RouterLink :to="{ name: 'edit customer', params: { nik: route.params.kodeCustomer } }" class="edit-button">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
-          <span class="header-button">Edit</span>
-        </RouterLink>
+        <span class="domain">Customer</span>
+        <span class="slash">/</span>
+        <span class="codomain">Edit</span>
       </div>
       <div class="container-bottom">
-        <form class="form" action="#">
+        <form class="form" action="#" @submit.prevent="updateCustomer">
           <div class="main-container-form">
             <div class="container-form-top">
               <div class="container-form-left">
@@ -22,36 +16,42 @@
                     <svg class="image-icon" xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="arcs"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M20.4 14.5L16 10 4 20"/></svg>
                     <span>Upload customer image</span>
                   </label>
-                  <input ref="inputImage" type="file" name="image-input" id="" accept=".png, .jpg, .jpeg">
-                  <img ref="previewImage" :src="`http://localhost:5000/api/assets/images/customers/${customer.foto}`" class="preview-image" alt="">
+                  <input @change="addFile" ref="inputImage" type="file" name="image-input" id="" accept=".png, .jpg, .jpeg">
+                  <img ref="previewImage" :src="`http://localhost:5000/api/assets/images/customers/${data.foto}`" class="preview-image" alt="">
+                </div>
+                <div class="button" @click="() => inputImage.click()">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M3 15v4c0 1.1.9 2 2 2h14a2 2 0 0 0 2-2v-4M17 8l-5-5-5 5M12 4.2v10.3"/></svg>
+                  <span>Upload New Image</span>
                 </div>
               </div>
               <div class="container-form-right">
                 <div class="input-group">
                   <label for="" class="label">NIK</label>
-                  <input type="text" readonly v-model="customer.nik">
+                  <input type="text" v-model="data.nik" readonly>
                 </div>
                 <div class="input-group">
                   <label for="" class="label">Nama</label>
-                  <input type="text" readonly v-model="customer.nama">
+                  <input type="text" v-model="data.nama">
                 </div>
                 <div class="input-group">
                   <label for="" class="label">No Telepon</label>
-                  <input type="text" readonly v-model="customer.no_telp">
+                  <input type="tel" v-model="data.no_telp">
                 </div>
                 <div class="input-group">
                   <label for="" class="label">Jenis Kelamin</label>
-                  <select name="" id="">
-                    <option value="" selected>{{ customer.jenis_kelamin }}</option>
+                  <select name="" id="" v-model="data.jenis_kelamin">
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
                   </select>
+                </div>
+                <div class="input-group">
+                  <label for="" class="label">Alamat</label>
+                  <textarea class="text-area" name="" id="" cols="30" rows="3" v-model="data.alamat"></textarea>
                 </div>
               </div>
             </div>
-            <div class="input-group">
-              <label for="" class="label">Alamat</label>
-              <textarea readonly class="text-area" name="" id="" cols="30" rows="5" v-model="customer.alamat"></textarea>
-            </div>
           </div>
+          <button class="submit-button" type="submit">Simpan Perubahan</button>
         </form>
       </div>
     </div>
@@ -59,18 +59,86 @@
 </template>
 
 <script setup>
-import axios from "axios";
-import { onMounted, reactive } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
+import { onMounted, reactive, ref } from "vue";
+import { useRoute } from "vue-router";
 
-const route = useRoute();
-const router = useRouter();
 const store = userAuthStore();
-const customer = reactive({
+const route = useRoute();
+const previewImage = ref(null);
+const inputImage = ref(null);
+const form = new FormData();
 
-});
+const data = reactive({});
 
+function addFile(event) {
+  previewImage.value.src = URL.createObjectURL(event.target.files[0]);
+  form.append('foto', event.target.files[0]);
+}
+
+function addDataForm() {
+  form.append('nik', data.nik);
+  form.append('nama', data.nama);
+  form.append('telp', data.no_telp);
+  form.append('jenisKelamin', data.jenis_kelamin);
+  form.append('alamat', data.alamat);
+}
+
+function clearDataForm() {
+  form.delete('nik');
+  form.delete('nama');
+  form.delete('telp');
+  form.delete('jenisKelamin');
+  form.delete('alamat');
+}
+
+async function updateCustomer() {
+  try {
+
+    addDataForm();
+
+    const response = await axios({
+      baseURL: 'http://localhost:5000/api',
+      method: 'PUT',
+      url: `/customers/${route.params.nik}`,
+      headers: {
+        authorization: `Bearer ${store.getAccessToken}`
+      },
+      data: form
+    });
+
+    console.log(response);
+
+    clearDataForm();
+
+  } catch (err) {
+    console.log(err)
+  }
+}
+
+// async function createCustomer() {
+//   try {
+//     Object.keys(customer).forEach(key => form.append(`${key}`, customer[key]));
+
+//     const response = await axios({
+//       method: 'POST',
+//       url: `http://localhost:5000/api/customers`,
+//       data: form,
+//       headers: {
+//         authorization: `Bearer ${store.getAccessToken}`
+//       }
+//     });
+
+//     console.log(response);
+//   } catch (err) {
+//     if (err instanceof AxiosError) {
+//       console.log(err, 'axios error');
+//     } else {
+//       console.log(err, 'other error')
+//     }
+//   }
+// }
 onMounted(async () => {
   try {
     const response = await axios({
@@ -82,8 +150,7 @@ onMounted(async () => {
     });
 
     console.log(response)
-    Object.keys(response.data.data[0]).forEach(key => customer[key] = response.data.data[0][key]);
-    console.log(customer.foto)
+    Object.keys(response.data.data[0]).forEach(key => data[key] = response.data.data[0][key]);
   } catch (err) {
     console.log(err)
   }
@@ -115,7 +182,8 @@ section{
 .container-top{
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: .5rem;
+  padding-inline: 1rem;
 }
 .domain, .slash{
   font-weight: 600;
@@ -125,28 +193,6 @@ section{
   font-size: 17px;
   font-weight: 600;
   color: #2753d8;
-}
-.container-title-page{
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  padding-inline: 1rem;
-}
-.edit-button{
-  display: flex;
-  align-items: center;
-  padding: 7px 10px;
-  gap: 6px;
-  background-color: #2753d8;
-  outline: none;
-  border: none;
-  border-radius: 8px;
-  margin-inline-end: 1rem;
-}
-.header-button{
-  font-family: 'Roboto';
-  font-size: 15px;
-  color: #fff;
 }
 
 /* Top */
@@ -160,6 +206,11 @@ section{
   flex-direction: column;
   justify-content: space-between;
   flex-grow: 1;
+}
+.container-form-left{
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 .form{
   background-color: #f3f7fa;
@@ -220,7 +271,7 @@ input[type="file"]{
   color: rgba(0, 0, 0, 0.8);
   padding-inline: 2px;
 }
-input[type="text"], select, textarea{
+input[type="text"], input[type="tel"], select, textarea{
   padding: 10px;
   padding-inline: 15px;
   font-size: 15px;
@@ -258,9 +309,23 @@ input[type="text"], select, textarea{
   background-color: #2b5ae5;
 }
 
-.d-flex{
+.button{
   display: flex;
+  gap: .5rem;
+  flex-grow: 1;
+  background-color: #2753d8;
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding-block: 10px;
+}
+.button:hover *, .button{
+  cursor: pointer;
 }
 
 
+.d-flex{
+  display: flex;
+}
 </style>

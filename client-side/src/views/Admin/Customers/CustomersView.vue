@@ -1,52 +1,57 @@
 <template>
   <section>
-    <div class="container-action">
-      <div class="wrapper">
-        <div class="label-page">Customer</div>
-        <RouterLink :to="{name: 'create customer'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
-      </div>
-      <div class="input-group">
-        <img class="search-icon" src="../../../../public/icons/search.png" alt="">
-        <input type="text" placeholder="Ketik kata kunci untuk mencari">
-      </div>
-    </div>
-    <ul>
-      <li v-for="customer in customers" :key="customer.nik">
-        <div class="container-detail">
-          <div>
-            <div class="label">NIK</div>
-            <h4>{{ customer.nik }}</h4>
-          </div>
-          <div>
-            <div class="label">Nama Customer</div>
-            <h4>{{ customer.nama }}</h4>
-          </div>
-          <div>
-            <div class="label">Jenis Kelamin</div>
-            <h4>{{ customer.jenis_kelamin }}</h4>
-          </div>
-          <div>
-            <div class="label">Nomor Telepon</div>
-            <h4>{{ customer.no_telp }}</h4>
-          </div>
-        </div>
-        <RouterLink :to="{name: 'detail customer', params: {nik: customer.nik}}">
-          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
+    <div class="container">
+      <div class="container-top">
+        <span class="header">Customer</span>
+        <RouterLink class="add-icon-wrapper" :to="{name: 'create customer'}">
+          <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </RouterLink>
-        <img @click="removeCustomer(customer.nik)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
-      </li>
-    </ul>
+        <form class="input-group">
+          <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#dadee0" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input name="q" class="input" type="text" placeholder="Ketik kata kunci untuk mencari" v-model="keyword">
+        </form>
+      </div>
+      <ul class="list-item-container">
+        <li class="list-item" v-for="customer in customers" :key="customer.nik">
+          <div class="container-detail-data">
+            <div class="detail-data">
+              <div class="header-data">NIK Customer</div>
+              <div class="data">{{ customer.nik }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Nama</div>
+              <div class="data">{{ customer.nama }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Jenis Kelamin</div>
+              <div class="data">{{ customer.jenis_kelamin }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">No Telp</div>
+              <div class="data">{{ customer.no_telp }}</div>
+            </div>
+          </div>
+          <RouterLink class="detail-icon" :to="{name: 'detail customer', params: {nik: customer.nik}}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
+          </RouterLink>
+          <svg @click="removeCustomer(customer.nik)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </li>
+      </ul>
+    </div>
   </section>
 </template>
 
 <script setup>
 import axios, { AxiosError } from "axios";
-import { onMounted, reactive } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
+import { useRoute, useRouter } from "vue-router";
 
-
+const route = useRoute();
+const router = useRouter();
 const store = userAuthStore();
 const customers = reactive([]);
+const keyword = ref(null)
 
 
 async function removeCustomer(nik) {
@@ -69,17 +74,35 @@ async function removeCustomer(nik) {
 
 onMounted(async () => {
   try {
+    const { q } = route.query;
+
+    if (!q) {
+      const response = await axios({
+        method: 'GET',
+        url: `http://localhost:5000/api/customers`,
+        headers: {
+          Authorization: `Bearer ${store.getAccessToken}`
+        }
+      });
+  
+      const data = response.data.data;
+  
+      data.forEach(customer => customers.push(customer));
+      return;
+    }
+
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `http://localhost:5000/api/customers`,
+      url: `/customers?q=${q}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${store.getAccessToken}`
       }
     });
 
     const data = response.data.data;
-
     data.forEach(customer => customers.push(customer));
+    keyword.value = q
 
   } catch (err) {
     if (err instanceof AxiosError) {
@@ -93,6 +116,110 @@ onMounted(async () => {
 
 <style scoped>
 section{
+  width: calc(100% - 250px);
+  margin-left: 250px;
+  overflow-x: hidden;
+}
+.container{
+  width: 95%;
+  margin-inline: auto;
+  margin-top: calc(5%/2);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Main Content */
+.container-top{
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-inline: 1rem;
+}
+.add-icon{
+  box-sizing: content-box;
+  padding: 3px;
+  background-color: #2753d8;
+  border-radius: 8px;
+}
+.add-icon-wrapper{
+  display: flex;
+  align-items: center;
+}
+.header{
+  font-weight: 600;
+  font-size: 20px;
+}
+.input{
+  padding: 10px;
+  flex-grow: 1;
+  border: none;
+  outline: none;
+  width: 300px;
+}
+.input-group{
+  padding-inline: 5px;
+  border-radius: 8px;
+  border: 2px solid #f3f7fa;
+  display: flex;
+  align-items: center;
+}
+
+/* List Item */
+.list-item-container{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.list-item{
+  width: 100%;
+  padding: 7px;
+  background-color: #f3f7fa;
+  border-radius: 8px;
+  position: relative;
+  display: flex;
+  gap: 1.5rem;
+}
+.container-detail-data{
+  display: flex;
+  flex-grow: 1;
+  gap: 1rem;
+  padding-inline: 10px;
+}
+.detail-data{
+  width: calc(100%/4);
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 55px;
+}
+.header-data{
+  font-size: 13px;
+  color: #adb5bd;
+}
+.data{
+  font-weight: 600;
+}
+.image{
+  width: 110.4px;
+  height: 73.6px;
+}
+.detail-icon{
+  align-self: center;
+}
+.delete-icon{
+  position: absolute;
+  box-sizing: content-box;
+  background-color: #f3f7fa;
+  border-radius: 999px;
+  border: 1px solid #6c757d;
+  padding: 2px;
+  right: 0;
+  top: 0;
+  transform: translate(50%, -50%);
+}
+/* section{
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
@@ -187,5 +314,5 @@ ul > li:hover{
 .label{
   font-size: 14px;
   color: rgba(0, 0, 0, .5)
-}
+} */
 </style>

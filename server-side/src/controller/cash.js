@@ -1,16 +1,30 @@
 const { removeImage } = require('../middleware/unlink');
-const { get, find, create, update, remove} = require('../models/cashes');
+const { get, find, create, update, remove, getLiteTransactions, getCompliteTransaction, search} = require('../models/cashes');
 
 
 async function getCashes(req, res) {
   try {
-    const [data] = await get();
+    const { q } = req.query;
+
+    if (!q) {
+      const [data] = await get();
+  
+      res.status(200).json({
+        status: 200,
+        message: 'OK',
+        data: data
+      });
+      return;
+    }
+
+    const [data] = await search(q);
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     });
+
   } catch (err) {
     res.status(500).json({
       status: 500,
@@ -18,6 +32,57 @@ async function getCashes(req, res) {
     });
 
     console.log(err.message);
+  }
+}
+
+async function getTransactions(req, res) {
+  try {
+    const [data] = await getLiteTransactions();
+
+    if (!data.length) {
+      res.status(404).json({
+        code: 404,
+        message: 'Data not found'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      code: 200,
+      data: data
+    });
+  } catch (err) {
+    res.status(400).json({
+      code: 400,
+      message: 'Bad request'
+    });
+  }
+}
+
+async function getSpesificTransaction(req, res) {
+  try {
+    const { kodeCash } = req.params;
+    console.log(kodeCash)
+    const [data] = await getCompliteTransaction(kodeCash);
+    
+    if (!data.length) {
+      res.status(400).json({
+        code: 400,
+        message: 'Bad request'
+      });
+      return;
+    }
+
+    res.status(200).json({
+      code: 200,
+      data: data
+    });
+  } catch (err) {
+    res.status(400).json({
+      code: 400,
+      message: 'Bad request'
+    });
+    console.error(err)
   }
 }
 
@@ -49,13 +114,13 @@ async function createCash(req, res) {
     const date = new Date()
     payload.createdAt = date.toLocaleString('en-GB').replaceAll('/', '-').replace(',', '');
     payload.updatedAt = payload.createdAt;
-    payload.tanggal = date.toLocaleString('id-ID').substring(0, 10).replaceAll('/', '-');
+    payload.tanggal = date.toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric',})
 
     // Images
     payload.fcKtp = req.file.filename;
 
     // Kode Cash (Unique)
-    payload.kodeCash = 'INV' + date.getTime().toString().slice(3);
+    payload.kodeCash = `TRXCASH${date.getFullYear()}${date.getTime().toString().slice(3)}`;
 
     const [data] = await create(payload);
 
@@ -140,6 +205,7 @@ async function deleteCash(req, res) {
   try {
     const { kodeCash } = req.params;
 
+    console.log(req.params)
     const [cash] = await find(kodeCash);
     if (!cash.length) {
       res.status(401).json({
@@ -179,6 +245,8 @@ async function deleteCash(req, res) {
 
 module.exports = {
   getCashes,
+  getTransactions,
+  getSpesificTransaction,
   findCash,
   createCash,
   updateCash,

@@ -5,7 +5,7 @@ const router = express.Router();
 const { authentication, admin, adminAndSales } = require('../middleware/auth');
 
 // Import Controller
-const { getCashes, findCash, createCash, updateCash, deleteCash } = require('../controller/cash');
+const { getCashes, findCash, createCash, updateCash, deleteCash, getSpesificTransaction, getTransactions } = require('../controller/cash');
 const { upload } = require('../middleware/multer/cashMulter');
 
 // Cash Routes
@@ -14,6 +14,8 @@ router.use(authentication, adminAndSales);
 
 // get methods
 router.get('/', getCashes);
+router.get('/transactions', getTransactions);
+router.get('/transactions/:kodeCash', getSpesificTransaction);
 router.get('/:kodeCash', findCash);
 
 // post methods
