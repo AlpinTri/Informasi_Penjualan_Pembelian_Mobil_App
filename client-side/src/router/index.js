@@ -1,5 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import { createRouter, createWebHistory, useRouter } from 'vue-router'
 import userAuthStore from '@/stores/auth'
 
 const router = createRouter({
@@ -7,11 +6,37 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: HomeView,
+      name: 'public',
+      redirect: {
+        name: 'home'
+      },
+      component: () => import('../views/PublicView.vue'),
       meta: {
         requireAuth: false
-      }
+      },
+      children: [
+        {
+          path: '/home',
+          name: 'home',
+          component: () => import('../views/Public/HomeView.vue')
+        },
+        {
+          path: '/search',
+          name: 'search',
+          component: () => import('../views/Public/SearchView.vue'),
+          meta: {
+            requireAuth: false
+          },
+        },
+        {
+          path: '/mobil/:kodeMobil',
+          name: 'publicCarDetail',
+          component: () => import('../views/Public/DetailCarView.vue'),
+          meta: {
+            requireAuth: false
+          }
+        }
+      ]
     },
     {
       path: '/admin',
@@ -30,7 +55,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales', 'Finance']
-          }
+          },
         },
 
         // Car Path
@@ -41,7 +66,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'master/cars/create',
@@ -50,7 +75,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
-          }
+          },
         },
         {
           path: 'master/cars/:kodeMobil/edit',
@@ -59,7 +84,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
-          }
+          },
         },
         {
           path: 'master/cars/:kodeMobil',
@@ -67,8 +92,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Cars/DetailCarView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales', 'Finance']
-          }
+            requireAdmin: ['Super Admin', 'Sales']
+          },
         },
 
         // User Path
@@ -79,7 +104,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
-          }
+          },
         },
         {
           path: 'master/users/create',
@@ -88,7 +113,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
-          }
+          },
         },
         {
           path: 'master/users/:kodeUser',
@@ -97,7 +122,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
-          }
+          },
         },
 
         // Customer Path
@@ -108,7 +133,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'master/customers/create',
@@ -117,7 +142,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'master/customers/:nik',
@@ -126,7 +151,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'master/customers/:nik/edit',
@@ -135,7 +160,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
 
         // Credit Package Path
@@ -145,8 +170,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit Packages/CreditPackagesView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin']
-          }
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+          },
         },
         {
           path: 'master/credit-packages/create',
@@ -154,8 +179,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit Packages/CreateCreditPackagesView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin']
-          }
+            requireAdmin: ['Super Admin', 'Finance']
+          },
         },
         {
           path: 'master/credit-packages/:kodePaketKredit',
@@ -163,8 +188,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit Packages/DetailCreditPackagesView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin']
-          }
+            requireAdmin: ['Super Admin', 'Finance']
+          },
         },
 
         // Cash Path
@@ -174,8 +199,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Cash/CashView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
-          }
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+          },
         },
         {
           path: 'transactions/cash/create',
@@ -184,7 +209,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'transactions/cash/:kodeTransaksi',
@@ -192,8 +217,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Cash/DetailCashTransactionView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
-          }
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+          },
         },
 
         // Credit Transactions
@@ -203,8 +228,8 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit/CreditTransactionsView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
-          }
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+          },
         },
         {
           path: 'transactions/credit/create',
@@ -213,7 +238,7 @@ const router = createRouter({
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Sales']
-          }
+          },
         },
         {
           path: 'transactions/credit/:kodeTransaksi',
@@ -221,36 +246,93 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit/DetailCreditTransactionView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
-          }
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+          },
         },
       ]
     },
 
-
+    {
+      path: '/print',
+      name: 'print file',
+      component: () => import('../views/Report/PrintFileView.vue'),
+      meta: {
+        requireAuth: true,
+        requireAdmin: ['Super Admin', 'Finance']
+      }
+    },
     {
       path: '/login',
       name: 'login',
       component: () => import('../views/LoginView.vue'),
       meta: {
         requireGuest: true
-      }
+      },
+      // beforeEnter: (to, from, next) => {
+      //   const router = useRouter();
+      //   const store = userAuthStore();
+      //   // console.log(store.getAccessToken, 'Before Enter')
+      //   next()
+      //   // if (to.meta.requireGuest && store.getAccessToken) {
+      //   //   router.push({
+      //   //     name: 'home'
+      //   //   });
+      //   // } else {
+      //   //   next();
+      //   // }
+      // }
+    },
+    {
+      path: '/forbidden',
+      name: 'forbidden',
+      component: () => import('../views/ForbiddenView.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not found',
+      component: () => import('../views/NotFoundView.vue')
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
   const store = userAuthStore();
+  const user = store.getUserInfo();
 
-  let _next;
+  if (to.meta.requireAuth && !store.isAuthenticated()) {
+    
+    // If doesn't login
+    next({
+      name: 'login'
+    });
 
-  if (to.meta.requireAuth && !token) {
-    _next = { name: 'login' }
-  } else if (to.meta.requireGuest && token) {
-    _next = { name: 'home' }
+  } else if (to.meta.requireGuest && store.isAuthenticated()) {
+    
+    // if user has login and want to access login page
+    next({
+      name: 'admin'
+    });
+
+  } else if (!to.matched.length) {
+    
+    // if user try to access not defined page/route
+    next({
+      name: 'not found'
+    });
+
+  } else if (to.meta.requireAdmin && !to.meta.requireAdmin.includes(user.status)) {
+    
+    // if user does not have access to page/route
+    next({
+      name: 'forbidden'
+    });
+
+  } else {
+
+    next();
+
   }
 
-  next(_next);
 });
 
-export default router
+export default router;

@@ -73,6 +73,8 @@ import userAuthStore from '@/stores/auth';
 import { reactive } from "vue";
 
 const store = userAuthStore();
+const token = store.getToken();
+
 const data = reactive({
   uangMuka: '',
   bunga: '',
@@ -83,15 +85,16 @@ const data = reactive({
 async function createCreditPackage() {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'POST',
-      url: 'http://localhost:5000/api/credit-packages',
+      url: '/credit-packages',
       data: {
         uangMuka: data.uangMuka,
         bunga: data.bunga,
         tenor: data.tenor
       },
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
   } catch (err) {

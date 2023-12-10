@@ -20,10 +20,16 @@
               </div>
             </div>
             <div class="container-form-right">
-              <div class="input-group">
-                <label for="" class="label">Merk</label>
-                <input type="text" v-model="data.merk">
-              </div>
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Merk</label>
+                  <input type="text" v-model="data.merk">
+                </div>
+                <div class="input-group">
+                  <label for="" class="label">Jumlah Seat</label>
+                  <input type="number" v-model="data.seat">
+                </div>
+              </div>             
               <div class="input-group-wrapper">
                 <div class="input-group">
                   <label for="" class="label">Type</label>
@@ -44,13 +50,19 @@
                   <input type="number" v-model="data.kapasitasMesin">
                 </div>
               </div>
-              <div class="input-group">
-                <label for="" class="label">Jenis Transmisi</label>
-                <select name="" id="" v-model="data.jenisTransmisi">
-                  <option value="" selected disabled>Pilih jenis transmisi</option>
-                  <option value="Otomatis">Otomatis</option>
-                  <option value="Manual">Manual</option>
-                </select>
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Jenis Transmisi</label>
+                  <select name="" id="" v-model="data.jenisTransmisi">
+                    <option value="" selected disabled>Pilih jenis transmisi</option>
+                    <option value="Otomatis">Otomatis</option>
+                    <option value="Manual">Manual</option>
+                  </select>
+                </div>
+                <div class="toggle-btn-container">
+                  <input class="left-toggle btn-toggle" :class="[ toggle[0].status ? 'active-toggle' : '' ]" @click="changeStatus(0, 1)" type="button" v-model="toggle[0].text">
+                  <input class="right-toggle btn-toggle" :class="[ toggle[1].status ? 'active-toggle' : '' ]" @click="changeStatus(1, 0)" type="button" v-model="toggle[1].text">
+                </div>
               </div>
               <div class="input-group money">
                 <label for="" class="label">Harga</label>
@@ -67,23 +79,12 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { reactive, ref } from "vue";
 import axios, {AxiosError} from 'axios';
 import userAuthStore from '@/stores/auth';
 
 const inputImage = ref(null);
 const previewImage = ref(null);
-const data = reactive({
-  merk: '',
-  type: '',
-  warna: '',
-  bahanBakar: '',
-  kapasitasMesin: '',
-  jenisTransmisi: '',
-  harga: ''
-});
-const store = userAuthStore()
-const form = new FormData();
 
 function addFile(event) {
   previewImage.value.src = URL.createObjectURL(event.target.files[0]);
@@ -91,17 +92,48 @@ function addFile(event) {
   form.append('gambar', event.target.files[0]);
 }
 
+function changeStatus(activeIndex, inactiveIndex) {
+  toggle[activeIndex].status = true;
+  toggle[inactiveIndex].status = false;
+}
+
+
+const toggle = reactive([
+  { text: 'Dijual', status: true },
+  { text: 'Tidak dijual', status: false }
+]);
+
+const data = reactive({
+  merk: '',
+  type: '',
+  warna: '',
+  bahanBakar: '',
+  kapasitasMesin: '',
+  jenisTransmisi: '',
+  harga: '',
+  seat: '',
+  statusPenjualan: 'Dijual'
+});
+const store = userAuthStore();
+const token = store.getToken();
+const form = new FormData();
+
+
 async function createCar() {
   try {
+
     Object.keys(data).forEach(key => form.append(`${key}`, data[key]));
+
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'POST',
-      url: 'http://localhost:5000/api/cars',
+      url: '/cars',
       data: form,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
+
     console.log(response)
   } catch (err) {
     if (err instanceof AxiosError) {
@@ -263,8 +295,36 @@ input[type="text"], input[type="number"], select{
   display: flex;
   gap: 20px;
 }
-.input-group-wrapper > .input-group{
-  flex-grow: 1;
+.input-group-wrapper > div{
+  width: calc(100%/2);
 }
 
+
+.toggle-btn-container{
+  display: flex;
+}
+.btn-toggle{
+  border: none;
+  box-sizing: content-box;
+  padding: 7px 10px 7px 10px;
+  font-size: 15px;
+  width: calc(100%/2);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+  background-color: #fff;
+  color: #2753d8;
+  /* transition: .75s ease; */
+}
+.right-toggle{
+  border-radius: 0 8px 8px 0;
+}
+.left-toggle{
+  border-radius: 8px 0 0 8px;
+}
+
+.active-toggle{
+  background-color: #2753d8;
+  color: #fff;
+  border-color: #2753d8;
+}
 </style>

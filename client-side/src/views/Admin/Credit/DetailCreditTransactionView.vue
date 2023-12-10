@@ -78,7 +78,7 @@
               </div>
               <div class="wrapper-data">
                 <div class="header-detail-data">Tanggal Pengajuan Kredit</div>
-                <div class="data">{{ dataDetailKredit.tanggal }}</div>
+                <div class="data">{{ new Date(dataDetailKredit.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
               </div>
             </div>
             <div class="wrapper-data-row car-detail">
@@ -125,7 +125,7 @@
             <svg ref="detailKreditIcon" class="dropdown-data-icon" @click="collapse('kredit')" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M18 15l-6-6-6 6"/></svg>
           </div>
         </div>
-        <div class="container-data container-cicilan">
+        <div v-show="userInfo.status === 'Super Admin' || userInfo.status === 'Finance'" class="container-data container-cicilan">
           <div class="container-tools">
             <div class="tools">
               <h3 class="header-data-cicilan">Detail Pembayaran</h3>
@@ -160,7 +160,7 @@
               </div>
               <div class="wrapper-data">
                 <div class="header-detail-data">Tanggal Dibayar</div>
-                <div class="data">{{ item.tanggal }}</div>
+                <div class="data">{{ new Date(item.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
               </div>
               <RouterLink class="detail-icon" :to="{name: 'detail credit transaction', params: {kodeTransaksi: 123}}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
@@ -180,8 +180,11 @@ import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth';
 
-const route = useRoute();
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
+
+const route = useRoute();
 const router = useRouter();
 
 // Data
@@ -232,7 +235,7 @@ async function removeCicilan(kodeCicilan, cicilanKe) {
       method: 'DELETE',
       url: `/installment-payments/${kodeCicilan}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -251,7 +254,7 @@ async function addCicilan() {
         method: 'POST',
         url: '/installment-payments',
         headers: {
-          Authorization: `Bearer ${store.getAccessToken}`
+          Authorization: `Bearer ${token}`
         },
         data: {
           kodeKredit: kodeKredit.value
@@ -277,7 +280,7 @@ async function changeFilter() {
       method: 'GET',
       url: `/installment-payments?kode_kredit=${route.params.kodeTransaksi}&sort=${sort}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -315,10 +318,11 @@ const cicilanPerBulan = computed(() => {
 onMounted(async () => {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: `GET`,
-      url: `http://localhost:5000/api/credits/transactions/${route.params.kodeTransaksi}`,
+      url: `/credits/transactions/${route.params.kodeTransaksi}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

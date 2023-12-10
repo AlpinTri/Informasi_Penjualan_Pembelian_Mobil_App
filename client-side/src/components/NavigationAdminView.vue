@@ -3,13 +3,52 @@
     <div class="nav-brand">
       <img src="../../public/mobilesia_logo.png" alt="">
     </div>
-    <div class="nav-logout">
+    <div class="nav-logout" @click="logout">
       <button>Log Out</button>
     </div>
   </nav>
 </template>
 
 <script setup>
+import { useRouter, onBeforeRouteLeave, onBeforeRouteUpdate } from 'vue-router';
+import userAuthStore from '../stores/auth';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+
+const store = userAuthStore();
+const router = useRouter();
+
+const failedLogout = () => {
+  toast.error('Something error, cannot logout', {
+    autoClose: 3000
+  })
+}
+
+function logout() {
+
+  const match = store.logout();
+
+  if (match) {
+
+    router.push({
+      name: 'login'
+    });
+
+    return;
+  } 
+
+  failedLogout();
+}
+
+// onBeforeRouteLeave((to, from, next) => {
+//   console.log(store.getAccessToken, 'Before route leave');
+//   next()
+// });
+
+// onBeforeRouteUpdate((to, from, next) => {
+//   console.log(store.getAccessToken, 'Before route Update');
+//   next()
+// });
 
 </script>
 
@@ -34,6 +73,9 @@ nav{
 }
 .nav-logout{
   margin-right: 25px;
+}
+.nav-logout:hover > *{
+  cursor: pointer;
 }
 .nav-logout > button{
   padding: 10px 30px 10px 30px;

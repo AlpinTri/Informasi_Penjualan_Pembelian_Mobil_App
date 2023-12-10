@@ -15,7 +15,7 @@ function authentication(req, res, next) {
     const token = header.split(' ')[1];
     
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-    
+
     next();
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
@@ -40,7 +40,7 @@ function adminAndFinance(req, res, next) {
 
     const { status } = jwt.decode(token);
 
-    if (status !== 'Super Admin' || status !== 'Finance') {
+    if (status !== 'Super Admin' && status !== 'Finance') {
       res.status(403).json({
         code: 403,
         message: 'You do not have permission'
@@ -75,6 +75,27 @@ function adminAndSales(req, res, next) {
   }
 }
 
+function allAdmin(req, res, next) {
+  try {
+    const header = req.headers.authorization || req.headers.Authorization;
+    const token = header.split(' ')[1];
+
+    const { status } = jwt.decode(token);
+
+    if (status !== 'Super Admin' && status !== 'Sales' && status !== 'Finance') {
+      res.status(403).json({
+        code: 403,
+        message: 'You do not have permission'
+      });
+      return;
+    }
+
+    next();
+  } catch (err) {
+    console.error(err.message);
+  }
+}
+
 function admin(req, res, next) {
   try {
     const header = req.headers.authorization || req.headers.Authorization;
@@ -98,6 +119,7 @@ function admin(req, res, next) {
 
 module.exports = {
   authentication,
+  allAdmin,
   adminAndFinance,
   adminAndSales,
   admin

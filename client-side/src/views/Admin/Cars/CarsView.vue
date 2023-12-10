@@ -3,7 +3,7 @@
     <div class="container">
       <div class="container-top">
         <span class="header">Mobil</span>
-        <RouterLink class="add-icon-wrapper" :to="{name: 'create car'}">
+        <RouterLink v-show="userInfo.status === 'Super Admin'" class="add-icon-wrapper" :to="{name: 'create car'}">
           <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </RouterLink>
         <form class="input-group">
@@ -35,7 +35,7 @@
           <RouterLink class="detail-icon" :to="{name: 'detail car', params: {kodeMobil: car.kode_mobil}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg @click="remove(car.kode_mobil)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="remove(car.kode_mobil)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
@@ -51,9 +51,11 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 const keyword = ref(null);
 
 const route = useRoute();
-const router = useRouter();
+
 // User Store
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
 
 // Cars Data
 const cars = reactive([]);
@@ -71,13 +73,14 @@ async function remove(kode) {
       method: 'DELETE',
       url: `http://localhost:5000/api/cars/${kode}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
     cars.forEach((car, index) => {
       car.kode_mobil == kode ? cars.splice(index, 1) : null;
     });
+
   } catch (err) {
     if (err instanceof AxiosError) {
       console.log(err)
@@ -87,7 +90,6 @@ async function remove(kode) {
   }
 }
 
-
 // Mounted Events
 onMounted(async () => { 
   try {
@@ -95,20 +97,25 @@ onMounted(async () => {
 
     if (!q || !q.trim()) {
       const response = await axios({
+        baseURL: 'http://localhost:5000/api',
         method: 'GET',
-        url: 'http://localhost:5000/api/cars',
+        url: '/cars',
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
       });
 
       response.data.data.forEach(car => cars.push(car));
       return;
     }
 
+
     const response = await axios({
       baseURL: 'http://localhost:5000/api',
       method: 'GET',
       url: `/cars?q=${q}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

@@ -65,6 +65,8 @@ import { onMounted, reactive, ref } from "vue";
 import { useRoute } from "vue-router";
 
 const store = userAuthStore();
+const token = store.getToken();
+
 const route = useRoute();
 const previewImage = ref(null);
 const inputImage = ref(null);
@@ -103,7 +105,7 @@ async function updateCustomer() {
       method: 'PUT',
       url: `/customers/${route.params.nik}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       },
       data: form
     });
@@ -117,35 +119,14 @@ async function updateCustomer() {
   }
 }
 
-// async function createCustomer() {
-//   try {
-//     Object.keys(customer).forEach(key => form.append(`${key}`, customer[key]));
-
-//     const response = await axios({
-//       method: 'POST',
-//       url: `http://localhost:5000/api/customers`,
-//       data: form,
-//       headers: {
-//         authorization: `Bearer ${store.getAccessToken}`
-//       }
-//     });
-
-//     console.log(response);
-//   } catch (err) {
-//     if (err instanceof AxiosError) {
-//       console.log(err, 'axios error');
-//     } else {
-//       console.log(err, 'other error')
-//     }
-//   }
-// }
 onMounted(async () => {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `http://localhost:5000/api/customers/${route.params.nik}`,
+      url: `/customers/${route.params.nik}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

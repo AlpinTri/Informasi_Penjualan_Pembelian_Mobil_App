@@ -39,44 +39,6 @@
       </ul>
     </div>
   </section>
-  <!-- <section>
-    <div class="container-action">
-      <div class="wrapper">
-        <div class="label-page">User</div>
-        <RouterLink :to="{name: 'create user'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
-      </div>
-      <div class="input-group">
-        <img class="search-icon" src="../../../../public/icons/search.png" alt="">
-        <input type="text" placeholder="Ketik kata kunci untuk mencari">
-      </div>
-    </div>
-    <ul>
-      <li v-for="user in users" :key="user.kode_user">
-        <div class="container-detail">
-          <div>
-            <div class="label">Nama User</div>
-            <h4>{{ user.nama }}</h4>
-          </div>
-          <div>
-            <div class="label">Jenis Kelamin</div>
-            <h4>{{ user.jenis_kelamin }}</h4>
-          </div>
-          <div>
-            <div class="label">No Telp</div>
-            <h4>{{ user.no_telp }}</h4>
-          </div>
-          <div>
-            <div class="label">Status</div>
-            <h4>{{ user.status }}</h4>
-          </div>
-        </div>
-        <RouterLink :to="{name: 'detail user', params: {kodeUser: user.kode_user}}">
-          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
-        </RouterLink>
-        <img @click="removeUser(user.kode_user)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
-      </li>
-    </ul>
-  </section> -->
 </template>
 
 <script setup>
@@ -84,8 +46,12 @@ import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
 import { useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
+const token = store.getToken();
+
 const route = useRoute();
 const router = useRouter();
 
@@ -96,6 +62,13 @@ const users = reactive([]);
 
 async function removeUser(kode) {
   try {
+    const user = store.getUserInfo();
+
+    if (kode === user.kode) {
+      toast.warning('Cannot delete user log in');
+      return;
+    }
+    
     const response = await axios({
       method: 'DELETE',
       url: `http://localhost:5000/api/users/${kode}`,
@@ -122,7 +95,7 @@ onMounted(async () => {
         method: 'GET',
         url: '/users',
         headers: {
-          Authorization: `Bearer ${store.getAccessToken}`,
+          Authorization: `Bearer ${token}`,
         }
       });
   
@@ -138,7 +111,7 @@ onMounted(async () => {
       method: 'GET',
       url: `/users?q=${q}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`,
+        Authorization: `Bearer ${token}`,
       }
     });
   

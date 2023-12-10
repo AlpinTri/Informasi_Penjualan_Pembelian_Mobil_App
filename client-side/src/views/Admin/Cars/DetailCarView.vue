@@ -7,7 +7,7 @@
           <span class="slash">/</span>
           <span class="codomain">Detail</span>
         </div>
-        <RouterLink :to="{name: 'edit car', params: {kodeMobil: route.params.kodeMobil}}" class="edit-button">
+        <RouterLink v-show="userInfo.status === 'Super Admin'" :to="{name: 'edit car', params: {kodeMobil: route.params.kodeMobil}}" class="edit-button">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
           <span class="header-button">Edit</span>
         </RouterLink>
@@ -76,6 +76,8 @@ import axios, { AxiosError } from 'axios';
 import userAuthStore from '@/stores/auth';
 
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
 const route = useRoute();
 
 const harga = ref('')
@@ -94,14 +96,13 @@ onMounted(async () => {
       method: 'GET',
       url: `http://localhost:5000/api/cars/${route.params.kodeMobil}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
     Object.keys(response.data.data[0]).forEach(key => data[key] = response.data.data[0][key]);
-    harga.value = rupiah.format(data.harga);
-    console.log(harga)
-    console.log(data)
+    harga.value = rupiah.format(data.harga)
+
   } catch (err) {
     if (err instanceof AxiosError) {
       console.log(err)

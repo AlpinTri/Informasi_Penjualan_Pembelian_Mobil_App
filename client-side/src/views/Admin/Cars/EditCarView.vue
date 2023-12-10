@@ -79,6 +79,7 @@ import { useRoute } from "vue-router";
 
 const route = useRoute();
 const store = userAuthStore();
+const token = store.getToken();
 
 const form = new FormData();
 const inputImage = ref(null);
@@ -120,10 +121,11 @@ async function updateCar() {
 
     addDatatoForm(data);
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'PUT',
-      url: `http://localhost:5000/api/cars/${route.params.kodeMobil}`,
+      url: `/cars/${route.params.kodeMobil}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       },
       data: form
     });
@@ -138,10 +140,11 @@ async function updateCar() {
 onMounted(async () => {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `http://localhost:5000/api/cars/${route.params.kodeMobil}`,
+      url: `/cars/${route.params.kodeMobil}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

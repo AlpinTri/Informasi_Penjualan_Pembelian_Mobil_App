@@ -32,13 +32,13 @@
             </div>
             <div class="detail-data">
               <div class="header-data">Tanggal dibayar</div>
-              <div class="data">{{ credit.tanggal }}</div>
+              <div class="data">{{ new Date(credit.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
             </div>
           </div>
           <RouterLink class="detail-icon" :to="{name: 'detail credit transaction', params: {kodeTransaksi: credit.kode_kredit}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg @click="removeTransaction(credit.kode_kredit)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="removeTransaction(credit.kode_kredit)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
@@ -52,6 +52,9 @@ import { RouterLink, useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth';
 
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
+
 const route = useRoute();
 const router = useRouter();
 
@@ -67,7 +70,7 @@ onMounted(async () => {
         method: 'GET',
         url: 'http://localhost:5000/api/credits/transactions',
         headers: {
-          authorization: `Bearer ${store.getAccessToken}`
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -83,7 +86,7 @@ onMounted(async () => {
       method: 'GET',
       url: `/credits?q=${q}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

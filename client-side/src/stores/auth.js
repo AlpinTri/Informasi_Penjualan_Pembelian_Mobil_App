@@ -1,59 +1,89 @@
 import { defineStore } from "pinia";
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive } from 'vue';
+import { jwtDecode } from "jwt-decode";
 
 
 const userAuthStore = defineStore('auth', () => {
   // States
-  const userLogin = reactive({
+  const user = reactive({
     kode: '',
     name: '',
     status: ''
   });
 
   // Getters
-  const getLoginUser = computed(() => ({
-    kode: userLogin.kode,
-    name: userLogin.name,
-    status: userLogin.status
-  }));
+  function getUserInfo() {
+    const token = getToken();
 
-  const getAccessToken = computed(() => {
-    const accessToken = JSON.parse(localStorage.getItem('access-token')) || null;
-    return accessToken;
-  });
+    if (token) {
+      const payload = jwtDecode(token);
+  
+      if (payload) {
+       user.kode = payload.kode;
+       user.name = payload.name;
+       user.status = payload.status;
+  
+        return user;
+      }
+
+      return null;
+    }
+
+    return null;
+  }
+
+  function getToken() {
+    const token = JSON.parse(localStorage.getItem("access-token"));
+    
+    if (token) {
+      return token;
+    }
+
+    return null;
+  }
 
   // Actions
-  function setToken(token) {
-    localStorage.setItem('access-token', JSON.stringify(token));
-  }
+  function login(token) {
+    if (token) {
+      localStorage.setItem('access-token', JSON.stringify(token));
 
-  function setLoginUser({kode, name, status}) {
-    userLogin.kode = kode;
-    userLogin.name = name;
-    userLogin.status = status;
-  }
-  
-  function logout() {
-    localStorage.removeItem('access-token');
-    userLogin.kode = null;
-    userLogin.name = null;
-    userLogin.status = null;
+      if (getToken()) {
+        return true;
+      }
 
-    if (!getAccessToken()) {
       return false;
     }
 
-    return true;
+    return false;
+  }
+
+  function logout() {
+    localStorage.clear();
+
+    if (!getToken() && !getUserInfo()) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function isAuthenticated() {
+    const token = getToken();
+
+    if (token) {
+      return true;
+    }
+
+    return false;
   }
 
   return {
-    userLogin,
-    getLoginUser,
-    getAccessToken,
-    setToken,
-    setLoginUser,
+    getUserInfo,
+    getToken,
+    login,
     logout,
+    isAuthenticated
   }
-})
+});
 
 export default userAuthStore;

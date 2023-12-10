@@ -58,6 +58,7 @@ import userAuthStore from '@/stores/auth';
 
 
 const store = userAuthStore();
+const token = store.getToken();
 
 const inputImage = ref(null);
 const previewImage = ref(null);
@@ -73,6 +74,7 @@ const temporaryCash = reactive({
   carCode: ''
 });
 const form = new FormData();
+
 // Format IDR
 const rupiah = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -92,7 +94,7 @@ function selectedType() {
 
 function selectedColor() {
   const total = cars.filter(item => item.type === temporaryCash.type && item.warna === temporaryCash.color);
-  console.log(total)
+
   if (total.length) {
     temporaryCash.cash = total[0].harga;
     temporaryCash.carCode = total[0].kode_mobil;    
@@ -115,7 +117,7 @@ async function createCashTransaction() {
       url: 'http://localhost:5000/api/cashes',
       data: form,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -131,7 +133,7 @@ onMounted(async () => {
       method: 'GET',
       url: `http://localhost:5000/api/cars`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

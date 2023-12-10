@@ -61,6 +61,8 @@ import userAuthStore from '@/stores/auth';
 import { reactive, ref } from "vue";
 
 const store = userAuthStore();
+const token = store.getToken();
+
 const previewImage = ref(null);
 const inputImage = ref(null);
 const form = new FormData();
@@ -87,7 +89,7 @@ async function createCustomer() {
       url: `http://localhost:5000/api/customers`,
       data: form,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

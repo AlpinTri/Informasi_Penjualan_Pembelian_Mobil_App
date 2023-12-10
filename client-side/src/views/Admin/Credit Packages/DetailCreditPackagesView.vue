@@ -35,34 +35,6 @@
       </div>
     </div>
   </section>
-  <!-- <section>
-    <div class="page">
-      <div>Data User</div>
-      <div>/</div>
-      <div>Create</div>
-    </div>
-    <form action="">
-      <div class="container-input">
-        <div class="container-input-group">
-          <div class="input-group">
-            <label for="" class="label">Uang Muka</label>
-            <input type="text" disabled v-model="data.uang_muka">
-            <span>%</span>
-          </div>
-          <div class="input-group">
-            <label for="" class="label">Bunga</label>
-            <input type="text" disabled v-model="data.bunga">
-            <span>%</span>
-          </div>
-          <div class="input-group">
-            <label for="" class="label">Tenor/Jangka Waktu</label>
-            <input type="text" disabled v-model="data.tenor">
-            <span>Month</span>
-          </div>
-        </div>
-      </div>
-    </form>
-  </section>  -->
 </template>
 
 <script setup>
@@ -73,16 +45,18 @@ import userAuthStore from '@/stores/auth'
 
 const route = useRoute();
 const store = userAuthStore();
+const token = store.getToken();
 
 const data = reactive({});
 
 onMounted(async () => {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `http://localhost:5000/api/credit-packages/${route.params.kodePaketKredit}`,
+      url: `/credit-packages/${route.params.kodePaketKredit}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

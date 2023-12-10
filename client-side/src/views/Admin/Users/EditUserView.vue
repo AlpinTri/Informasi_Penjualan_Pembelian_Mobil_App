@@ -56,7 +56,9 @@ import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
 import { reactive } from "vue";
 
-const store = userAuthStore()
+const store = userAuthStore();
+const token = store.getToken();
+
 const data = reactive({
   nama: '',
   jenisKelamin: '',
@@ -79,7 +81,7 @@ async function createUser() {
         password: data.password
       },
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`,
+        Authorization: `Bearer ${token}`,
       }
     });
 

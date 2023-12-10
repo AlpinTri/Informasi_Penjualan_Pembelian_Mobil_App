@@ -67,6 +67,8 @@ import userAuthStore from '@/stores/auth';
 const route = useRoute();
 const router = useRouter();
 const store = userAuthStore();
+const token = store.getToken();
+
 const customer = reactive({
 
 });
@@ -74,10 +76,11 @@ const customer = reactive({
 onMounted(async () => {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'GET',
-      url: `http://localhost:5000/api/customers/${route.params.nik}`,
+      url: `/customers/${route.params.nik}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

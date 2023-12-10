@@ -58,7 +58,7 @@
             </div>
             <div class="customer-data">
               <div class="header-data">Tanggal Bayar</div>
-              <div class="data">{{ detailCash.tanggal }}</div>
+              <div class="data">{{ new Date(detailCash.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
             </div>
           </div>
           <div class="container-bottom-bottom">
@@ -98,6 +98,8 @@ import userAuthStore from '@/stores/auth';
 import { RouterLink, useRoute } from "vue-router";
 
 const store = userAuthStore();
+const token = store.getToken();
+
 const route = useRoute();
 const detailCash = reactive({
 
@@ -122,7 +124,7 @@ onMounted(async () => {
       method: 'GET',
       url: `http://localhost:5000/api/cashes/transactions/${route.params.kodeTransaksi}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 

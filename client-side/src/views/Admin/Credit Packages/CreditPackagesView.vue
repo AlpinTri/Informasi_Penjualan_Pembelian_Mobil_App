@@ -3,7 +3,7 @@
     <div class="container">
       <div class="container-top">
         <span class="header">Paket Kredit</span>
-        <RouterLink class="add-icon-wrapper" :to="{name: 'create credit package'}">
+        <RouterLink v-show="userInfo.status === 'Super Admin' || userInfo.status === 'Finance'" class="add-icon-wrapper" :to="{name: 'create credit package'}">
           <svg class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </RouterLink>
         <form class="input-group">
@@ -30,7 +30,7 @@
           <RouterLink class="detail-icon" :to="{name: 'detail credit package', params: {kodePaketKredit: data.kode_paket}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg @click="removeCreditPackage(data.kode_paket)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin' || userInfo.status === 'Finance'" @click="removeCreditPackage(data.kode_paket)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
@@ -45,6 +45,9 @@ import { useRoute } from "vue-router";
 
 const keyword = ref(null);
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
+
 const creditPackages = reactive([]);
 const route = useRoute();
 
@@ -52,10 +55,11 @@ async function removeCreditPackage(kodePaketKredit) {
   try {
     console.log(kodePaketKredit)
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'DELETE',
-      url: `http://localhost:5000/api/credit-packages/${kodePaketKredit}`,
+      url: `/credit-packages/${kodePaketKredit}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -76,7 +80,7 @@ onMounted(async () => {
         method: 'GET',
         url: '/credit-packages',
         headers: {
-          Authorization: `Bearer ${store.getAccessToken}`
+          Authorization: `Bearer ${token}`
         }
       });
   
@@ -92,7 +96,7 @@ onMounted(async () => {
       method: 'GET',
       url: `/credit-packages?q=${q}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
   

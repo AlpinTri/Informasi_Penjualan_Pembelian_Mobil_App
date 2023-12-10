@@ -34,7 +34,7 @@
           <RouterLink class="detail-icon" :to="{name: 'detail customer', params: {nik: customer.nik}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg @click="removeCustomer(customer.nik)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="removeCustomer(customer.nik)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
@@ -50,6 +50,9 @@ import { useRoute, useRouter } from "vue-router";
 const route = useRoute();
 const router = useRouter();
 const store = userAuthStore();
+const token = store.getToken();
+const userInfo = store.getUserInfo();
+
 const customers = reactive([]);
 const keyword = ref(null)
 
@@ -57,10 +60,11 @@ const keyword = ref(null)
 async function removeCustomer(nik) {
   try {
     const response = await axios({
+      baseURL: 'http://localhost:5000/api',
       method: 'DELETE',
-      url: `http://localhost:5000/api/customers/${nik}`,
+      url: `/customers/${nik}`,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -78,10 +82,11 @@ onMounted(async () => {
 
     if (!q) {
       const response = await axios({
+        baseURL: 'http://localhost:5000/api',
         method: 'GET',
-        url: `http://localhost:5000/api/customers`,
+        url: `/customers`,
         headers: {
-          Authorization: `Bearer ${store.getAccessToken}`
+          Authorization: `Bearer ${token}`
         }
       });
   
@@ -96,7 +101,7 @@ onMounted(async () => {
       method: 'GET',
       url: `/customers?q=${q}`,
       headers: {
-        Authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
@@ -219,100 +224,5 @@ section{
   top: 0;
   transform: translate(50%, -50%);
 }
-/* section{
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 95%;
-  margin-inline: auto;
-}
-.add-icon{
-  padding: 5px;
-  border-radius: 5px;
-  background-color: #2753d8;
-}
-.wrapper{
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-.label-page{
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-.container-action{
-  display: flex;
-  gap: 1.5rem;
-}
-.input-group{
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, .1);
-  padding: 5px;
-  padding-inline: 10px;
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-}
-.input-group > input{
-  padding: 5px;
-  width: 400px;
-  border: none;
-  outline: none;
-  font-family: Roboto;
-  font-size: 1rem;
-}
 
-ul{
-  width: 98%;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-ul > li{
-  display: flex;
-  padding: 10px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  position: relative;
-  align-items: center;
-  justify-content: space-between;
-  gap: 3rem;
-}
-ul > li:hover{
-  background-color: #fff;
-  box-shadow: 0 0 10px #cfdae4;
-}
-.delete-icon{
-  padding: 5px;
-  border-radius: 100%;
-  border: 1px solid rgba(0, 0, 0, .1);
-  background-color: #f8f9fa;
-  position: absolute;
-  right: 0;
-  top: 0;
-  transform: translate(50%, -50%);
-}
-.detail-chevron{
-  padding: 5px;
-  border-radius: 100%;
-  background-color: #f8f9fa;
-}
-.container-detail{
-  display: flex;
-  width: 100%;
-  height: 50px;
-}
-.container-detail > div{
-  width: 25%;
-  height: 60px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  gap: .2rem;
-}
-.label{
-  font-size: 14px;
-  color: rgba(0, 0, 0, .5)
-} */
 </style>
