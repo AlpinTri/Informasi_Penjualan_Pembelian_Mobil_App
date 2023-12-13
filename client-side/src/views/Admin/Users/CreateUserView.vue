@@ -43,7 +43,7 @@
               <input type="text" v-model="data.password">
             </div>
           </div>
-          <button class="submit-button" type="submit">Simpan</button>
+          <button class="submit-button" type="submit" :disabled="failedInsert">Simpan</button>
         </form>
       </div>
     </div>
@@ -54,10 +54,18 @@
 <script setup>
 import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
-import { reactive } from "vue";
+import { reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
+
+const emit = defineEmits(['successCreate']);
+
+const router = useRouter();
+const failedInsert = ref(false);
 
 const data = reactive({
   nama: '',
@@ -86,12 +94,59 @@ async function createUser() {
       }
     });
 
-    console.log(response)
+    const responseStatus = response.data.status;
+    emit('successCreate');
+    if (responseStatus >= 200 && responseStatus < 300) {
+      router.push({
+        name: 'users'
+      });
+    }
+
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+        failedInsert.value = true
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log(err)
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 }

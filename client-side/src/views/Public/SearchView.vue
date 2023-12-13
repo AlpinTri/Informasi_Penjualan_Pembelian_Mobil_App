@@ -258,7 +258,6 @@ onMounted(async () => {
         method: 'GET',
         url: `cars`
       });
-      console.log('params null')
 
       const responseData = response.data.data;
       responseData.forEach(item => data.push(item));
@@ -279,7 +278,6 @@ onMounted(async () => {
       params: queryParams
     });
 
-    console.log(response)
     const responseData = response.data.data;
     responseData.forEach(item => data.push(item));
     

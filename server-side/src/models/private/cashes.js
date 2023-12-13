@@ -73,8 +73,14 @@ function create({ kodeCash, nik, kodeMobil, fcKtp, cashBayar, tanggal, createdAt
 }
 
 function update({ kodeCash, nik, kodeMobil, fcKtp, cashBayar, updatedAt }) {
-  const query = `UPDATE beli_cash SET nik='${nik}',kode_mobil='${kodeMobil}',fotocopy_ktp='${fcKtp}',cash_bayar='${cashBayar}',updated_at='${updatedAt}'
-                WHERE kode_cash = '${kodeCash}'`;
+  let query;
+  if (!fcKtp) {
+    query = `UPDATE beli_cash SET nik='${nik}', kode_mobil='${kodeMobil}', cash_bayar='${cashBayar}',updated_at='${updatedAt}'
+            WHERE kode_cash = '${kodeCash}'`;
+  } else {
+    query = `UPDATE beli_cash SET nik='${nik}',kode_mobil='${kodeMobil}', fotocopy_ktp='${fcKtp}',cash_bayar='${cashBayar}',updated_at='${updatedAt}'
+            WHERE kode_cash = '${kodeCash}'`;
+  }
 
   const result = dbPool.execute(query);
   return result;

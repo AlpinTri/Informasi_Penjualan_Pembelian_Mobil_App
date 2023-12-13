@@ -28,6 +28,10 @@
               <div class="data">{{ car.warna }}</div>
             </div>
             <div class="detail-data">
+              <div class="header-data">Status Penjualan</div>
+              <div class="data">{{ car.status_penjualan ? 'Dijual' : 'Tidak dijual' }}</div>
+            </div>
+            <div class="detail-data">
               <div class="header-data">Harga</div>
               <div class="data">{{ rupiah.format(car.harga) }}</div>
             </div>
@@ -35,22 +39,33 @@
           <RouterLink class="detail-icon" :to="{name: 'detail car', params: {kodeMobil: car.kode_mobil}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg v-show="userInfo.status === 'Super Admin'" @click="remove(car.kode_mobil)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="openDeleteModal(car.kode_mobil)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
+    <Transition name="fade">
+      <DeleteModalView 
+        v-if="isOpenDeleteModal" 
+        @click="openDeleteModal" 
+        @delete="removeCar(deleteId)"
+      ></DeleteModalView>
+    </Transition>
   </section>
 </template>
 
 <script setup>
+import DeleteModalView from "../../../components/DeleteModalView.vue";
 import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
 import { onMounted, reactive, ref} from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const keyword = ref(null);
 
 const route = useRoute();
+const router = useRouter();
 
 // User Store
 const store = userAuthStore();
@@ -60,6 +75,18 @@ const userInfo = store.getUserInfo();
 // Cars Data
 const cars = reactive([]);
 
+// Delete Algorithm
+const deleteId = ref('')
+
+const isOpenDeleteModal = ref(false);
+
+function openDeleteModal(id) {
+  isOpenDeleteModal.value = !isOpenDeleteModal.value;
+  if (isOpenDeleteModal.value) {
+    deleteId.value = id
+  }
+}
+
 // Format IDR
 const rupiah = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -67,7 +94,7 @@ const rupiah = new Intl.NumberFormat('id-ID', {
 });
 
 // Delete Car Function
-async function remove(kode) {
+async function removeCar(kode) {
   try {
     const response = await axios({
       method: 'DELETE',
@@ -80,12 +107,55 @@ async function remove(kode) {
     cars.forEach((car, index) => {
       car.kode_mobil == kode ? cars.splice(index, 1) : null;
     });
-
+    
+    toast.success('Berhasil menghapus data')
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeMobil'" || err.response.data.error === 'FAILED_TO_DELETE_DATA' || err.response.data.error === 'DATA_NOT_FOUND') {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'CANNOT_DELETE_DATA, FOREIGN_KEY_CONSTRAINT') { 
+        toast.warning('Data mengandung FOREIGN KEY, tidak dapat menghapus data')
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log('somthing error')
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 }
@@ -119,14 +189,57 @@ onMounted(async () => {
       }
     });
 
-    response.data.data.forEach(car => cars.push(car));
+    const data = response.data.data;
+    data.forEach(car => cars.push(car));
     keyword.value = q;
+
+    if (!data.length) {
+      setTimeout(() => {
+        toast.error('Data tidak ditemukan');
+      }, 0)
+    }
 
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log('somthing error')
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 })
@@ -137,11 +250,13 @@ section{
   width: calc(100% - 250px);
   margin-left: 250px;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .container{
   width: 95%;
   margin-inline: auto;
-  margin-top: calc(5%/2);
+  margin-block: calc(5%/2);
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -200,7 +315,7 @@ section{
   gap: 1rem;
 }
 .detail-data{
-  width: calc(100%/4);
+  width: calc(100%/5);
   margin-top: 5px;
   display: flex;
   flex-direction: column;

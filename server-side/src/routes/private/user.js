@@ -17,10 +17,10 @@ router.get('/', getUsers);
 router.get('/:kodeUser', getUsersById);
 
 // post method
-router.post('/', isRequestBodyValid, createUser);
+router.post('/', createUser);
 
 // put method
-router.put('/:kodeUser', isRequestBodyValid, updateUser);
+router.put('/:kodeUser', updateUser);
 
 // delete method
 router.delete('/:kodeUser', deleteUser);

@@ -1,10 +1,16 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
-        <span class="domain">User</span>
-        <span class="slash">/</span>
-        <span class="codomain">Detail</span>
+        <div class="container-title-page">
+          <span class="domain">User</span>
+          <span class="slash">/</span>
+          <span class="codomain">Detail</span>
+        </div>
+        <RouterLink :to="{ name: 'edit user', params: { nik: route.params.kodeUser } }" class="edit-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
+          <span class="header-button">Edit</span>
+        </RouterLink>
       </div>
       <div class="container-bottom">
         <form class="form" action="#">
@@ -45,18 +51,31 @@
         </form>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
 import axios, { AxiosError } from "axios";
-import { onMounted, reactive } from "vue";
-import { useRoute } from "vue-router";
+import { onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth';
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const route = useRoute();
 const store = userAuthStore();
 const token = store.getToken();
+
+const router = useRouter();
+
+const error = ref(false);
 
 const data = reactive({
 
@@ -73,13 +92,53 @@ onMounted(async () => {
     });
 
     Object.keys(response.data.data[0]).forEach(key => data[key] = response.data.data[0][key]);
-    console.log(response)
-    console.log(data)
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err);
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeUser'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log(err)
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 })
@@ -110,8 +169,7 @@ section{
 .container-top{
   display: flex;
   align-items: center;
-  gap: .5rem;
-  padding-inline: 1rem;
+  justify-content: space-between;
 }
 .domain, .slash{
   font-weight: 600;
@@ -196,5 +254,53 @@ input[type="text"], select{
 }
 
 
+.container-title-page{
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding-inline: 1rem;
+}
+.edit-button{
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  gap: 6px;
+  background-color: #2753d8;
+  outline: none;
+  border: none;
+  border-radius: 8px;
+  margin-inline-end: 1rem;
+}
+.header-button{
+  font-family: 'Roboto';
+  font-size: 15px;
+  color: #fff;
+}
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
+}
 </style>
 

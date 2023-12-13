@@ -4,18 +4,17 @@ const router = express.Router();
 const { getCreditPackages, findCreditPackage, createCreditPackage, updateCreditPackage, deleteCreditPackage } = require('../../controller/private/creditPackage');
 
 // Import Middleware
-const { admin, allAdmin} = require('../../middleware/auth');
+const { admin, allAdmin, adminAndFinance} = require('../../middleware/auth');
 
 // Middleware All Admin
-router.use(allAdmin);
+router.use(adminAndFinance);
 
 // Credit Packages Routes
 // get methods
 router.get('/', getCreditPackages);
 router.get('/:kodePaket', findCreditPackage);
 
-// Middleware Super Admin
-router.use(admin);
+// Middleware Super Admin And Finance
 
 // post methods
 router.post('/', createCreditPackage);

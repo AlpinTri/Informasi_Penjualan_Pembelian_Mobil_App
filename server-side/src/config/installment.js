@@ -7,7 +7,7 @@ function calculateInstallment(kodeKredit) {
       // const query = `SELECT pembayaran_cicilan.kode_kredit `
       const [kredit] = await dbPool.execute(`SELECT * FROM kredit WHERE kode_kredit = '${kodeKredit}'`);
       
-      const [paket] = await dbPool.execute(`SELECT * FROM paket_kredit WHERE kode_paket = '${kredit[0].kode_paket_kredit}'`);
+      const [paket] = await dbPool.execute(`SELECT * FROM paket_kredit WHERE kode_paket = '${kredit[0].kode_paket}'`);
 
       const [car] = await dbPool.execute(`SELECT * FROM mobil WHERE kode_mobil = '${kredit[0].kode_mobil}'`);
 
@@ -26,7 +26,7 @@ function calculateInstallment(kodeKredit) {
 
       // Get Sisa Angsuran dan Jumlah sisa Angsuran
       const [maxKredit] = await dbPool.execute(`SELECT * FROM pembayaran_cicilan WHERE kode_kredit = '${kodeKredit}' ORDER BY sisa_cicilan LIMIT 1`);
-
+      console.log(maxKredit)
       if (!maxKredit.length) {
         // Jika belum ada angsuran masuk maka akan men set 1
         resolve({

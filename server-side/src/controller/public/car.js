@@ -2,10 +2,7 @@ const { findAll, getAll, findOne } = require("../../models/public/cars");
 
 async function getCars(req, res) {
   try {
-
     const [cars] = await getAll();
-
-    if (!cars || !cars.length) throw new Error('Cars Not Found');
 
     res.status(200).json({
       status: 'OK',
@@ -13,19 +10,21 @@ async function getCars(req, res) {
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-    console.log(err);
-
-    if (err.message === 'Cars Not Found') {
-      res.status(404).json({
-        error: 'Cars not found'
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
       });
+
     } else {
       res.status(500).json({
-        error: 'Internal server error'
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
       });
-    }
 
+    }
   }
 }
 
@@ -34,11 +33,11 @@ async function searchCars(req, res) {
     const query = req.query;
     // console.log(query)
 
-    if (!Object.keys(query).length) throw new Error('Query is Null');
+    if (!Object.keys(query).length) throw new Error('QUERY_NULL');
     
     const [cars] = await findAll(query);
 
-    if (!cars.length) throw new Error('Cars Not Found');
+    if (!cars.length) throw new Error('NOT_FOUND_ERROR');
 
     res.status(200).json({
       status: 'OK',
@@ -46,30 +45,26 @@ async function searchCars(req, res) {
     });
      
   } catch (err) {
-    
-    // console.debug(err);
+    const expression = /connect ECONNREFUSED/i;
 
-    if (err.message === 'Query is Null') {
-      res.status(400).json({
-        error: {
-          code: 400,
-          message: 'Query must not be null'
-        }
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
       });
-    } else if (err.message === 'Cars Not Found') {
+
+    } else if(err.message === 'NOT_FOUND_ERROR') {
       res.status(404).json({
-        error: {
-          code: 404,
-          message: 'Cars not found'
-        }
-      });
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      }); 
+
     } else {
       res.status(500).json({
-        error: {
-          code: 500,
-          message: 'Internal server error'
-        }
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
       });
+
     }
 
   }
@@ -80,9 +75,11 @@ async function findCar(req, res) {
     
     const { kodeMobil } = req.params;
 
+    if (!kodeMobil) throw new Error('MISSING_PARAMS_ERROR');
+
     const [car] = await findOne(kodeMobil);
 
-    if (!car.length) throw new Error('Cars Not Found');
+    if (!car.length) throw new Error('NOT_FOUND_ERROR');
 
     res.status(200).json({
       status: 'OK',
@@ -90,16 +87,30 @@ async function findCar(req, res) {
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-    console.log(err);
-
-    if (err.message === 'Car Not Found') {
-      res.status(404).json({
-        error: 'Car not found'
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
       });
+
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else if (err.message === 'MISSING_PARAMS_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeMobil'"
+      });
+
     } else {
       res.status(500).json({
-        error: 'Internal server error'
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
       });
     }
   }

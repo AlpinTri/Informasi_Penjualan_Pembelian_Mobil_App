@@ -38,93 +38,50 @@
           <RouterLink class="detail-icon" :to="{name: 'detail cash transaction', params: {kodeTransaksi: data.kode_cash}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg v-show="userInfo.status === 'Super Admin'" @click="removeTransaction(data.kode_cash)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="openDeleteModal(data.kode_cash)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
-  </section>
-  <!-- <section>
-    <div class="container-action">
-      <div class="wrapper">
-        <div class="label-page">Pembelian Cash</div>
-        <RouterLink :to="{name: 'create cash transaction'}"><img class="add-icon" src="../../../../public/icons/add.png" alt=""></RouterLink>
-      </div>
-      <div class="input-group">
-        <img class="search-icon" src="../../../../public/icons/search.png" alt="">
-        <input type="text" placeholder="Ketik kata kunci untuk mencari">
-      </div>
-    </div>
-    <ul>
-      <li v-for="transaction in cash" :key="transaction.kode_cash">
-        <div class="container-detail">
-          <div>
-            <div class="label">Nama Customer</div>
-            <h4>{{ transaction.nama }}</h4>
-          </div>
-          <div>
-            <div class="label">Nomor Telepon</div>
-            <h4>{{ transaction.no_telp }}</h4>
-          </div>
-          <div>
-            <div class="label">Type Mobil</div>
-            <h4>{{ transaction.type }}</h4>
-          </div>
-          <div>
-            <div class="label">Tanggal Bayar</div>
-            <h4>{{ transaction.tanggal }}</h4>
-          </div>
-        </div>
-        <RouterLink :to="{name: 'detail cash transaction', params: {kodeTransaksi: transaction.kode_cash}}">
-          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
-        </RouterLink>
-        <img @click="removeCustomer(transaction.kode_cash)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
-      </li>
-        <li v-for="transaction in cash" :key="transaction.kode_cash">
-        <div class="container-detail">
-          <div>
-            <div class="label">Nama Customer</div>
-            <h4>{{ transaction.nama }}</h4>
-          </div>
-          <div>
-            <div class="label">Nomor Telepon</div>
-            <h4>{{ transaction.no_telp }}</h4>
-          </div>
-          <div>
-            <div class="label">Type Mobil</div>
-            <h4>{{ transaction.type }}</h4>
-          </div>
-          <div>
-            <div class="label">Harga</div>
-            <h4>{{ transaction.harga }}</h4>
-          </div>
-          <div>
-            <div class="label">Cash Bayar</div>
-            <h4>{{ transaction.cash_bayar }}</h4>
-          </div>
-        </div>
-        <RouterLink :to="{name: 'detail customer', params: {nik: customer.nik}}">
-          <img class="detail-chevron" src="../../../../public/icons/right-chevron.png" alt="detail">
-        </RouterLink>
-        <img @click="removeCustomer(customer.nik)" class="delete-icon" src="../../../../public/icons/close.png" alt="">
-      </li> 
-    </ul>
-  </section> -->
+    <Transition name="fade">
+      <DeleteModalView 
+        v-if="isOpenDeleteModal" 
+        @click="openDeleteModal" 
+        @delete="removeTransaction(deleteId)"
+      ></DeleteModalView>
+    </Transition>
+  </section> 
 </template>
 
 <script setup>
-import axios from "axios";
+import DeleteModalView from "../../../components/DeleteModalView.vue";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
 import { useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
 const userInfo = store.getUserInfo();
+
 const route = useRoute();
 const router = useRouter();
 
 const keyword = ref(null);
 const cash = reactive([]);
+
+// Delete Algorithm
+const deleteId = ref('')
+
+const isOpenDeleteModal = ref(false);
+
+function openDeleteModal(id) {
+  isOpenDeleteModal.value = !isOpenDeleteModal.value;
+  if (isOpenDeleteModal.value) {
+    deleteId.value = id
+  }
+}
 
 // Format IDR
 const rupiah = new Intl.NumberFormat('id-ID', {
@@ -134,7 +91,6 @@ const rupiah = new Intl.NumberFormat('id-ID', {
 
 async function removeTransaction(kodeCash) {
   try {
-    console.log(kodeCash)
     const response = await axios({
       method: 'DELETE',
       url: `http://localhost:5000/api/cashes/${kodeCash}`,
@@ -149,9 +105,55 @@ async function removeTransaction(kodeCash) {
       }
     })
 
-    console.log(response)
+    toast.success('Berhasil menghapus data')
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCash'" || err.response.data.error === 'FAILED_TO_DELETE_DATA' || err.response.data.error === 'DATA_NOT_FOUND') {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'CANNOT_DELETE_DATA, FOREIGN_KEY_CONSTRAINT') { 
+        toast.warning('Data mengandung FOREIGN KEY, tidak dapat menghapus data')
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -190,8 +192,54 @@ onMounted(async () => {
 
     keyword.value = q;
 
+    if (!data.length) {
+      setTimeout(() => {
+        toast.error('Data tidak ditemukan');
+      }, 0)
+    }
+
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 })
 </script>
@@ -201,11 +249,13 @@ section{
   width: calc(100% - 250px);
   margin-left: 250px;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .container{
   width: 95%;
   margin-inline: auto;
-  margin-top: calc(5%/2);
+  margin-block: calc(5%/2);
   display: flex;
   flex-direction: column;
   gap: 2rem;

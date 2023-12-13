@@ -22,16 +22,6 @@ function isRequestBodyValid(req, res, next) {
     return;
   }
 
-  // if (data.password.length < 8) {
-  //   res.setHeader('Content-Type', 'application/json');
-  //   res.status(400).json({
-  //       status: 400,
-  //       message: "'password' must be >=8 character"
-  //   });
-
-  //   return;
-  // }
-
   next();
 }
 

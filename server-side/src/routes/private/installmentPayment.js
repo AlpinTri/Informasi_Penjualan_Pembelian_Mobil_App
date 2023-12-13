@@ -16,7 +16,7 @@ router.get('/', getInstallmentPayments);
 router.get('/:kodeCicilan', findInstallmentPayment);
 
 // post methods
-router.post('/', admin, createInstallmentPayment);
+router.post('/', createInstallmentPayment);
 
 // put methods
 

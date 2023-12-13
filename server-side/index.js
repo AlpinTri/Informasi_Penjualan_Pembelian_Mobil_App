@@ -5,11 +5,11 @@ const app = express();
 const cors = require('cors');
 
 // Import Middleware
-// const corsOptions = {
-//    origin:'http://localhost:5173/', 
-//    credentials:true,            
-//    optionSuccessStatus:200,
-// }
+const corsOptions = {
+   origin:'*', 
+   credentials:true,            
+   optionSuccessStatus:200,
+}
 
 // Multer Error
 const { MulterError } = require('multer');
@@ -26,20 +26,22 @@ const authRoutes = require('./src/routes/auth');
 const countDataRoutes = require('./src/routes/private/countData');
 
 const publicCarsRoutes = require('./src/routes/public/car');
+const publicCreditPackagesRoutes = require('./src/routes/public/creditPackage');
 const { authentication } = require('./src/middleware/auth');
 
 
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.all('*', (req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "http://localhost:5173/");
+    res.header("Access-Control-Allow-Origin", "*");
     next();
 });
 
 // Public Routes
 app.use('/api/v1/cars', publicCarsRoutes);
+app.use('/api/v1/credit-packages', publicCreditPackagesRoutes);
 // app.use('/api/v1/credit-package',)
 
 // Public Image Middleware
@@ -67,7 +69,6 @@ app.use('/api/cashes', cashRoutes);
 app.use('/api/installment-payments', installmentPaymentRoutes);
 app.use('/api/counts', countDataRoutes);
 
-
 // Error Handling
 app.use((err, req, res, next) => {
   if (err instanceof MulterError) {
@@ -75,10 +76,10 @@ app.use((err, req, res, next) => {
       status: 400,
       message: err.message
     })
+    console.log(err.message)
     return;
   }
 
-  console.log('This code is run')
 })
 
 

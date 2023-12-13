@@ -1,7 +1,6 @@
 const { removeImage } = require('../../middleware/unlink');
 const { get, find, create, update, remove, getLiteTransactions, getCompliteTransaction, search, findByDate, countTransactionsByYear } = require('../../models/private/credits');
 const cicilan = require('../../models/private/installmentPayments');
-const { countTransactions } = require('../../utils/countTransactions');
 
 
 async function getCredits(req, res) {
@@ -16,6 +15,7 @@ async function getCredits(req, res) {
         message: 'OK',
         data: data
       });
+
       return;
     }
 
@@ -26,13 +26,31 @@ async function getCredits(req, res) {
       message: 'OK',
       data: data
     });
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error'
-    });
 
-    console.log(err.message)
+  } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
+
+    console.log(err.message, 'Credit Route');
   }
 }
 
@@ -44,41 +62,59 @@ async function getTransactions(req, res) {
       
       const [data] = await getLiteTransactions();
   
-      if (!data.length) {
-        res.status(404).json({
-          code: 404,
-          message: 'Data not found'
-        });
-        return;
-      }
+      if (!data.length) throw new Error('NOT_FOUND_ERROR');
   
       res.status(200).json({
-        code: 200,
+        status: 200,
+        message: 'OK',
         data: data
       });
+
       return;
     }
 
+    if (!to || !from) throw new Error('MISSING_QUERY_PARAMS_ERROR');
 
     const [data] = await findByDate(to, from);
 
-    if (!data.length) {
-      res.status(404).json({
-        code: 404,
-        message: 'Data not found'
-      });
-      return;
-    }
+    if (!data.length) throw new Error('NOT_FOUND_ERROR');
 
     res.status(200).json({
-      code: 200,
+      status: 200,
+      message: 'OK',
       data: data
     });
+
   } catch (err) {
-    res.status(400).json({
-      code: 400,
-      message: 'Bad request'
-    });
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else if (err.message === "MISSING_QUERY_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_QUERY_PARAMS 'to' OR 'from'"
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
+
+    console.log(err.message, 'Credit Route');
   }
 }
 
@@ -86,54 +122,97 @@ async function getSpecificTransaction(req, res) {
   try {
     const { kodeKredit } = req.params;
 
+    if (!kodeKredit) throw new Error('MISSING_PARAMS_ERROR');
+    
     const [data] = await getCompliteTransaction(kodeKredit);
 
-    console.log('pass')
-
-    if (!data.length) {
-      res.status(400).json({
-        code: 400,
-        message: 'Bad request'
-      });
-      return;
-    }
+    if (!data.length) throw new Error('NOT_FOUND_ERROR');
 
     const [dataCicilan] = await cicilan.getByKodeKredit(kodeKredit, 1);
 
     res.status(200).json({
-      code: 200,
+      status: 200,
+      message: 'OK',
       data: {
         detailKredit: data,
         cicilan: dataCicilan
       }
     });
   } catch (err) {
-    res.status(400).json({
-      code: 400,
-      message: 'Bad request'
-    });
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: `MISSING_PARAMS 'kodeKredit'`
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
+
+    console.log(err.message, 'Credit Route');
   }
 }
-
-
 
 async function findCredit(req, res) {
   try {
     const { kodeKredit } = req.params;
 
+    if (!kodeKredit) throw new Error('MISSING_PARAMS_ERROR');
+
     const [data] = await find(kodeKredit)
     
+    if (!data.length) throw new Error('NOT_FOUND_ERROR');
+
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     })
 
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error'
-    });
+  } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: `MISSING_PARAMS 'kodeKredit'`
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+    }
 
     console.log(err.message)
   }
@@ -144,12 +223,14 @@ async function createCredit(req, res) {
 
     const payload = req.body;
     
-    console.log(payload)
+    if (!req.files || Object.keys(req.files) < 3) throw new Error('PAYLOAD_FILE_ERROR');
+
     // Add Timestamps
     const date = new Date();
     payload.createdAt = date.toLocaleString('en-GB').replaceAll('/', '-').replace(',', '');
     payload.updatedAt = payload.createdAt;
 
+    
     // Iamges
     payload.fcKtp = req.files.KTP[0].filename;
     payload.fcKk = req.files.KK[0].filename;
@@ -161,28 +242,46 @@ async function createCredit(req, res) {
     // Date
     payload.tanggal = date.toLocaleDateString('en-GB').split('/').reverse().join('-');
 
-    
     const [result] = await create(payload)
 
-    if (!result.affectedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'Failed to insert'
-      });
-    }
+    if (!result.affectedRows) throw new Error('FAILED_INSERT_ERROR');
 
     res.status(201).json({
       status: 201,
-      message: 'Ok',
+      message: 'CREATED',
       data: payload
     });
 
 
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error'
-    });
+  } catch(err) {
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'FAILED_INSERT_ERROR') {
+      res.status(500).json({
+        status: 500,
+        error: 'FAILED_TO_INSERT_DATA'
+      });
+
+    } else if (err.message === 'PAYLOAD_FILE_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_IMAGE_FILE"
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+
+    console.log(err.message, 'Credit Route');
   }
 }
 
@@ -193,17 +292,13 @@ async function updateCredit(req, res) {
 
     const { kodeKredit } = req.params;
 
+    if (!kodeKredit) throw new Error('MISSING_PARAMS_ERROR');
+
     // Is data have??
     const [kredit] = await find(kodeKredit);
 
-    if (!kredit.length) {
-      res.status(401).json({
-        status: 401,
-        message: 'Data not found'
-      });
-      return;
-    }
-    console.log('pass 1')
+    if (!kredit.length) throw new Error(`NOT_FOUND_ERROR`);
+
     // 
     payload.kodeKredit = kodeKredit;
     
@@ -211,40 +306,69 @@ async function updateCredit(req, res) {
     const date = new Date();
     payload.updatedAt = date.toLocaleString('en-GB').replaceAll('/', '-').replace(',', '');
 
-    // Iamges
-    payload.fcKtp = req.files.KTP[0].filename;
-    payload.fcKk = req.files.KK[0].filename;
-    payload.fcGaji = req.files.slipGaji[0].filename;
-
-    console.log('pass 2')
-    console.log(payload)
+    if (req.files.KTP[0].filename) payload.fcKtp = req.files.KTP[0].filename;
+    if (req.files.KK[0].filename) payload.fcKk = req.files.KK[0].filename;
+    if (req.files.slipGaji[0].filename) payload.fcGaji = req.files.slipGaji[0].filename;
+    
     const [result] = await update(payload);
-    console.log('pass 3')
-    if (!result.changedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'Failed to Update'
-      });
-      return;
-    }
 
-    await removeImage('credit', kredit[0].fotocopy_ktp)
-    await removeImage('credit', kredit[0].fotocopy_kk)
-    await removeImage('credit', kredit[0].foto_slip_gaji)
+    if (!result.changedRows) throw new Error('FAILED_UPDATE_ERROR');
 
-    console.log('pass 4')
+    if (req.files.KTP[0].filename) await removeImage('credit', kredit[0].fotocopy_ktp);
+    if (req.files.KK[0].filename) await removeImage('credit', kredit[0].fotocopy_kk);
+    if (req.files.slipGaji[0].filename) await removeImage('credit', kredit[0].foto_slip_gaji);
+
     res.status(201).json({
       status: 201,
-      message: 'Ok',
+      message: 'OK',
       data: payload
-    });
-
+    })
 
   } catch (err) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error'
-    });
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'FAILED_UPDATE_ERROR') {
+      res.status(500).json({
+        status: 500,
+        error: 'FAILED_TO_UPDATE_DATA'
+      });
+
+    } else if (err.message === 'PAYLOAD_FILE_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_IMAGE_FILE"
+      });
+
+    } else if (err.code == 'ENOENT') {
+      res.status(201).json({
+        status: 201,
+        message: 'DATA_UPDATED, BUT_THERE_WAS_AN_ERROR_REMOVING_THE_ASSOCIATED_FILE'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeKredit'"
+      });
+
+    } else if (err.message === `NOT_FOUND_ERROR`) {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+    }
 
     console.log(err.message)
   }
@@ -255,27 +379,16 @@ async function deleteCredit(req, res) {
 
     const { kodeKredit } = req.params;
 
+    if (!kodeKredit) throw new Error('MISSING_PARAMS_ERROR');
+
     // Is data have??
     const [kredit] = await find(kodeKredit);
 
-    if (!kredit.length) {
-      res.status(401).json({
-        status: 401,
-        message: 'Data not found'
-      });
-      return;
-    }
-
+    if (!kredit.length) throw new Error('NOT_FOUND_ERROR');
 
     const [result] = await remove(kodeKredit)
 
-    if (!result.affectedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'Failed to Update'
-      });
-      return;
-    }
+    if (!result.affectedRows) throw new Error('FAILED_DELETE_ERROR');
 
     await removeImage('credit', kredit[0].fotocopy_ktp)
     await removeImage('credit', kredit[0].fotocopy_kk)
@@ -283,15 +396,59 @@ async function deleteCredit(req, res) {
 
     res.status(200).json({
       status: 200,
-      message: 'Ok'
+      message: 'OK'
     });
 
 
-  } catch (error) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error'
-    });
+  } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
+    const expressionForeign = /foreign key constraint/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (expressionForeign.test(err.message)) {
+      res.status(400).json({
+        status: 400,
+        error: 'CANNOT_DELETE_DATA, FOREIGN_KEY_CONSTRAINT'
+      });
+
+    } else if (err.message === 'FAILED_DELETE_ERROR') {
+      res.status(500).json({
+        status: 500,
+        error: 'FAILED_TO_DELETE_DATA'
+      });
+
+    } else if (err.code == 'ENOENT') {
+      res.status(200).json({
+        status: 200,
+        message: 'DATA_DELETED, BUT_THERE_WAS_AN_ERROR_REMOVING_THE_ASSOCIATED_FILE'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeKredit'"
+      });
+
+    } else if (err.message === `NOT_FOUND_ERROR`) {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
+
+    console.log(err.message)
   }
 }
 

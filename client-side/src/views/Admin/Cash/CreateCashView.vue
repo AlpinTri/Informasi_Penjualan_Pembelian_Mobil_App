@@ -44,7 +44,7 @@
               </div>
             </div>
           </div>
-          <button class="submit-button" type="submit">Buat Transaksi</button>
+          <button class="submit-button" type="submit" :disabled="failedInsert">Buat Transaksi</button>
         </form>
       </div>
     </div>
@@ -52,13 +52,21 @@
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
+import { useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
+const router = useRouter();
+
+const emit = defineEmits(['successCreate']);
 
 const store = userAuthStore();
 const token = store.getToken();
+
+const failedInsert = ref(false);
 
 const inputImage = ref(null);
 const previewImage = ref(null);
@@ -87,7 +95,6 @@ function selectedType() {
   carColors.splice(0, carColors.length);
   cars.forEach(item => item.type === temporaryCash.type ? carColors.push(item.warna) : '');
   if (temporaryCash.color) {
-    console.log(temporaryCash.color)
     selectedColor()
   }
 }
@@ -121,9 +128,61 @@ async function createCashTransaction() {
       }
     });
 
-    console.log(response)
+    const responseStatus = response.data.status;
+    if (responseStatus >= 200 && responseStatus < 300) {
+      emit('successCreate');
+      router.push({
+        name: 'cash transactions'
+      });
+    }
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+        failedInsert.value = true
+
+      } else if (err.response.data.error === 'MISSING_CUSTOMER_IMAGE_FILE') {
+        toast.error('Gambar tidak boleh kosong');
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -131,10 +190,7 @@ onMounted(async () => {
   try {
     const response = await axios({
       method: 'GET',
-      url: `http://localhost:5000/api/cars`,
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+      url: `http://localhost:5000/api/v1/cars`,
     });
 
     const data = response.data.data;
@@ -144,7 +200,47 @@ onMounted(async () => {
       carTypes.add(item.type);
     });
   } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
 
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 });
 </script>
@@ -295,163 +391,4 @@ input[type="text"], select{
 .d-flex{
   display: flex;
 }
-/* section{
-  width: 96%;
-  margin: auto;
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.page{
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-}
-.page > div{
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-.page > div:last-child{
-  font-size: 1.2rem;
-  color: #2753d8;
-}
-form{
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  gap: 20px;
-  flex-direction: column;
-}
-#container-form{
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-}
-.top-container, .bottom-container{
-  display: flex;
-  gap: 10px;
-}
-.bottom-container > .input-group{
-  flex-grow: 1;
-}
-.container-input-group{
-  display: flex;
-}
-.container-input-group > .input-group{
-  width: calc(100% / 2);
-}
-.container-input-group > .input-group:first-child{
-  padding-inline-end: 10px;
-}
-.container-input-group > .input-group:last-child{
-  display: none;
-}
-.input-group{
-  display: flex;
-  position: relative;
-}
-.image-input{
-  width: 32px;
-}
-.image-label{
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .3rem;
-}
-.input-image{
-  width: calc(552px / 1.2);
-  height: calc(368px / 1.2);
-  border: 1px dashed rgba(0, 0, 0, .1);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.input-image:hover > label > span{
-  color: #2753d8;
-}
-.input-image:hover{
-  cursor: pointer;
-}
-input[type="file"]{
-  display: none;
-}
-.container-input{
-  display: flex;
-  flex-direction: column;
-  justify-content: end;
-  gap: 2rem;
-  flex-grow: 1;
-}
-.label{
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 13px;
-  transform: translate(15px, -50%);
-  z-index: 0;
-  background-color: #f8f9fa;
-  transition: 1s ease;
-  color: rgba(0, 0, 0, 0.8);
-  padding-inline: 2px;
-  font-family: Roboto;
-}
-input[type="text"], select, textarea{
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  width: 100%;
-  outline: none;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  font-family: Roboto;
-}
-button{
-  padding: 10px;
-  font-family: Roboto;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: transparent;
-  background-color: #2753d8;
-  color: #fff;
-}
-button:hover{
-  background-color: #2e60f4;
-}
-
-.preview-image{
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  display: none;
-}
-input[type="tel"]{
-  font-size: 15px;
-  border: none;
-  outline: none;
-  width: 100%;
-}
-.rp{
-  padding-inline-end: 10px;
-  border-inline-end: 1px solid #000;
-}
-.money{
-  background-color: #fff;
-  align-items: center;
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  border-radius: 8px;
-  gap: 10px;
-}
-
-.d-flex{
-  display: flex;
-} */
 </style>

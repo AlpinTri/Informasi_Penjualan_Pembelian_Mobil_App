@@ -1,9 +1,9 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
         <div class="container-title-page">
-          <span class="domain">Penjualan</span>
+          <span class="domain">Mobil</span>
           <span class="slash">/</span>
           <span class="codomain">Detail</span>
         </div>
@@ -26,9 +26,15 @@
               </div>
             </div>
             <div class="container-form-right">
-              <div class="input-group">
-                <label for="" class="label">Merk</label>
-                <input type="text" v-model="data.merk" readonly>
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Merk</label>
+                  <input type="text" v-model="data.merk" readonly>
+                </div>
+                <div class="input-group">
+                  <label for="" class="label">Jumlah Seat</label>
+                  <input type="number" v-model="data.jumlah_seat" readonly>
+                </div>
               </div>
               <div class="input-group-wrapper">
                 <div class="input-group">
@@ -50,11 +56,17 @@
                   <input type="text" v-model="data.kapasitas_mesin" readonly>
                 </div>
               </div>
-              <div class="input-group">
-                <label for="" class="label">Jenis Transmisi</label>
-                <select name="" id="" v-model="data.jenis_transmisi">
-                  <option :value="data.jenis_transmisi">{{ data.jenis_transmisi }}</option>
-                </select>
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Jenis Transmisi</label>
+                  <select name="" id="" v-model="data.jenis_transmisi">
+                    <option :value="data.jenis_transmisi">{{ data.jenis_transmisi }}</option>
+                  </select>
+                </div>
+                <div class="toggle-btn-container">
+                  <input class="left-toggle btn-toggle" :class="[ data.status_penjualan ? 'active-toggle' : '' ]" type="button" value="Dijual">
+                  <input class="right-toggle btn-toggle" :class="[ !data.status_penjualan ? 'active-toggle' : '' ]" type="button" value="Tidak dijual">
+                </div>
               </div>
               <div class="input-group">
                 <label for="" class="label">Harga</label>
@@ -65,25 +77,33 @@
         </form>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
   </section>
-  
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from "vue";
-import { useRoute, RouterLink } from "vue-router";
+import { useRoute, RouterLink, useRouter } from "vue-router";
 import axios, { AxiosError } from 'axios';
 import userAuthStore from '@/stores/auth';
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
 const userInfo = store.getUserInfo();
 const route = useRoute();
+const router = useRouter();
+const error = ref(false);
 
 const harga = ref('')
-const data = reactive({
-
-});
+const data = reactive({});
 
 const rupiah = new Intl.NumberFormat('id-ID', {
   style: 'currency',
@@ -105,9 +125,51 @@ onMounted(async () => {
 
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeMobil'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log(err.message, 'fail')
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 });
@@ -238,7 +300,7 @@ input[type="file"]{
   color: rgba(0, 0, 0, 0.8);
   padding-inline: 2px;
 }
-input[type="text"], select{
+input[type="text"], input[type="number"], select{
   padding: 10px;
   padding-inline: 15px;
   font-size: 15px;
@@ -263,8 +325,6 @@ input[type="text"], select{
 .button:hover *, .button{
   cursor: pointer;
 }
-
-
 .d-flex{
   display: flex;
 }
@@ -273,8 +333,63 @@ input[type="text"], select{
   display: flex;
   gap: 20px;
 }
-.input-group-wrapper > .input-group{
-  flex-grow: 1;
+.input-group-wrapper > div{
+  width: calc(100%/2);
 }
 
+
+
+.toggle-btn-container{
+  display: flex;
+}
+.btn-toggle{
+  border: none;
+  box-sizing: content-box;
+  padding: 7px 10px 7px 10px;
+  font-size: 15px;
+  width: calc(100%/2);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+  background-color: #fff;
+  color: #2753d8;
+  /* transition: .75s ease; */
+}
+.right-toggle{
+  border-radius: 0 8px 8px 0;
+}
+.left-toggle{
+  border-radius: 8px 0 0 8px;
+}
+
+.active-toggle{
+  background-color: #2753d8;
+  color: #fff;
+  border-color: #2753d8;
+}
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
+}
 </style>

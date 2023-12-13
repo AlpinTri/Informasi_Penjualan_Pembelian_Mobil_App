@@ -2,7 +2,7 @@ const dbPool = require('../../config/db_config');
 const dbQuery = require('../../utils/searchCars');
 
 function getAll() {
-  const query = 'SELECT * FROM mobil';
+  const query = `SELECT * FROM mobil WHERE status_penjualan = ${true}`;
 
   const data = dbPool.execute(query);
 
@@ -11,14 +11,14 @@ function getAll() {
 
 function findAll(params) {
   let query = dbQuery(params);
-  console.log(query)
+
   const result = dbPool.execute(query);
 
   return result;
 }
 
 function findOne(kodeMobil) {
-  const query = `SELECT * FROM mobil WHERE kode_mobil = '${kodeMobil}'`;
+  const query = `SELECT * FROM mobil WHERE kode_mobil = '${kodeMobil}' AND status_penjualan = ${true}`;
 
   const data = dbPool.execute(query);
 

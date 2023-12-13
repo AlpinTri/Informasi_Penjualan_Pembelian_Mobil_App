@@ -28,6 +28,7 @@
             </svg>
             <span v-else>Login</span>
           </button>
+          <RouterLink :to="{name: 'home'}" class="cancel">Batal</RouterLink>
         </form>
       </div>
     </div>
@@ -36,11 +37,13 @@
 
 <script setup>
 import axios, { AxiosError } from 'axios';
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router';
+import { onMounted, reactive, ref } from 'vue'
+import { useRouter, RouterLink } from 'vue-router';
 import userAuthStore from '@/stores/auth';
 import { toast } from 'vue3-toastify';
 import 'vue3-toastify/dist/index.css';
+
+const router = useRouter();
 
 const uncomplite = () => {
   toast.warning('Please enter your id and password', {
@@ -54,7 +57,6 @@ const wrongIdPw = () => {
 }
 
 const store = userAuthStore();
-const router = useRouter();
 
 const loading = ref(false)
 
@@ -93,16 +95,35 @@ async function login() {
 
   } catch (err) {
     if (err instanceof AxiosError) {
-
-      if (err.response.data.error === 'Invalid credentials') {
+      if (err.response.data.error === 'INVALID_CREDENTIALS') {
+        toast.info('Mohon masukkan id dan password dengan benar', {
+          autoClose: 3000
+        });
         loading.value = false;
-        wrongIdPw();
-
-        console.log(err)
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error', {
+          autoClose: false
+        });
+        loading.value = false;
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error', {
+          autoClose: false
+        });
+        loading.value = false;
+      } else if (err.response.data.error === 'PAYLOAD_ERROR') {
+        toast.info('Mohon untuk melengkapi id dan password', {
+          autoClose: 3000
+        });
+        loading.value = false;
+      } else {
+        toast.error('Network error', {
+          autoClose: false
+        });
+        loading.value = false;
       }
-      console.log(err)
     } else {
-      console.log(err)
+      toast.error('Terjadi kesalahan pada server');
+      loading.value = false;
     }
   }
 }
@@ -229,26 +250,13 @@ label{
   cursor: pointer;
 }
 
-/* Loading animation */
-/* .loader{
-  background-color: aqua;
-  height: 35px;
-  width: 35px;
-  border-radius: 999%;
-  position: fixed;
-  border-block-end: 2px solid #fff;
-  border-inline-start: 2px solid #fff;
-  animation: spinner 1s ease infinite;;
+.cancel{
+  align-self: center;
+  color: #2753d8;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
-@keyframes spinner {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-} */
 .spinner {
   animation: rotate 2s linear infinite;
   width: 30px;

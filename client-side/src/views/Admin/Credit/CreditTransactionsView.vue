@@ -19,37 +19,47 @@
               <div class="data">{{ credit.nama }}</div>
             </div>
             <div class="detail-data">
-              <div class="header-data">Nomor Telepon</div>
-              <div class="data">{{ credit.no_telp }}</div>
-            </div>
-            <div class="detail-data">
               <div class="header-data">Type Mobil</div>
               <div class="data">{{ credit.type }}</div>
             </div>
             <div class="detail-data">
               <div class="header-data">Kode Paket Kredit</div>
-              <div class="data">{{ credit.kode_paket_kredit }}</div>
+              <div class="data">{{ credit.kode_paket }}</div>
             </div>
             <div class="detail-data">
-              <div class="header-data">Tanggal dibayar</div>
+              <div class="header-data">Status Kredit</div>
+              <div class="data status" :class="[credit.status_kredit == 'Lunas' ? 'lunas' : 'belum-lunas']">{{ credit.status_kredit }}</div>
+            </div>
+            <div class="detail-data">
+              <div class="header-data">Tanggal Pengajuan</div>
               <div class="data">{{ new Date(credit.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
             </div>
           </div>
           <RouterLink class="detail-icon" :to="{name: 'detail credit transaction', params: {kodeTransaksi: credit.kode_kredit}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
           </RouterLink>
-          <svg v-show="userInfo.status === 'Super Admin'" @click="removeTransaction(credit.kode_kredit)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <svg v-show="userInfo.status === 'Super Admin'" @click="openDeleteModal(credit.kode_kredit)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </li>
       </ul>
     </div>
+    <Transition name="fade">
+      <DeleteModalView 
+        v-if="isOpenDeleteModal" 
+        @click="openDeleteModal" 
+        @delete="removeTransaction(deleteId)"
+      ></DeleteModalView>
+    </Transition>
   </section>
 </template>
 
 <script setup>
-import axios from "axios";
+import DeleteModalView from "../../../components/DeleteModalView.vue";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import { RouterLink, useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth';
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
@@ -60,6 +70,86 @@ const router = useRouter();
 
 const keyword = ref(null);
 const creditTransactions = reactive([]);
+
+// Delete Algorithm
+const deleteId = ref('')
+
+const isOpenDeleteModal = ref(false);
+
+function openDeleteModal(id) {
+  isOpenDeleteModal.value = !isOpenDeleteModal.value;
+  if (isOpenDeleteModal.value) {
+    deleteId.value = id
+  }
+}
+
+async function removeTransaction(kodeKredit) {
+  try {
+    const response = await axios({
+      method: 'DELETE',
+      url: `http://localhost:5000/api/credits/${kodeKredit}`,
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    creditTransactions.forEach((item, index) => {
+      if (item.kode_kredit === kodeKredit) {
+        creditTransactions.splice(index, 1);
+      }
+    })
+
+    toast.success('Berhasil menghapus data')
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCash'" || err.response.data.error === 'FAILED_TO_DELETE_DATA' || err.response.data.error === 'DATA_NOT_FOUND') {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'CANNOT_DELETE_DATA, FOREIGN_KEY_CONSTRAINT') { 
+        toast.warning('Data mengandung FOREIGN KEY, tidak dapat menghapus data')
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
+  }
+}
 
 onMounted(async () => {
   try {
@@ -74,7 +164,7 @@ onMounted(async () => {
         }
       });
 
-      const data = response.data.data
+      const data = response.data.data;
       data.forEach(item => creditTransactions.push(item));
 
       return;
@@ -94,9 +184,50 @@ onMounted(async () => {
     data.forEach(item => creditTransactions.push(item));
 
     keyword.value = q;
+    console.log(data)
 
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error, coba lagi nanti');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server, coba lagi nanti');
+
+    }
   }
 });
 </script>
@@ -107,11 +238,13 @@ section{
   width: calc(100% - 250px);
   margin-left: 250px;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .container{
   width: 95%;
   margin-inline: auto;
-  margin-top: calc(5%/2);
+  margin-block: calc(5%/2);
   display: flex;
   flex-direction: column;
   gap: 2rem;
@@ -206,5 +339,23 @@ section{
   right: 0;
   top: 0;
   transform: translate(50%, -50%);
+}
+
+.lunas{
+  background-color: #82d114;
+  width: fit-content;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+}
+.belum-lunas{
+  background-color: #2753d8;
+  width: fit-content;
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+}
+.status{
+  font-size: 14px;
 }
 </style>

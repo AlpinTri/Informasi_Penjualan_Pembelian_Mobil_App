@@ -52,11 +52,13 @@
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref, shallowRef, watch } from "vue";
 import Chart from 'chart.js/auto';
 import userAuthStore from "../../stores/auth";
 import { useRouter } from "vue-router";
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
@@ -153,7 +155,47 @@ async function fetchData(typeData) {
 
     return response.data.data
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -180,6 +222,9 @@ async function updateChart() {
 onMounted(async () => {
   try {
     const data = await fetchData('Transactions');
+    if (!data) {
+      return;
+    }
 
     chart.value = new Chart(myChart.value.getContext('2d'), config);
 
@@ -205,7 +250,7 @@ onMounted(async () => {
 
 
   } catch (err) {
-    console.log(err)
+    toast.error('Terjadi kesalahan pada server');
   }
 });
 </script>

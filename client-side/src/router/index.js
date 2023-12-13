@@ -35,6 +35,16 @@ const router = createRouter({
           meta: {
             requireAuth: false
           }
+        },
+        {
+          path: '/forbidden',
+          name: 'forbidden',
+          component: () => import('../views/ForbiddenView.vue')
+        },
+        {
+          path: '/:pathMatch(.*)*',
+          name: 'not found',
+          component: () => import('../views/NotFoundView.vue')
         }
       ]
     },
@@ -65,7 +75,7 @@ const router = createRouter({
           component: () => import('../views/Admin/Cars/CarsView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
           },
         },
         {
@@ -92,7 +102,7 @@ const router = createRouter({
           component: () => import('../views/Admin/Cars/DetailCarView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales']
+            requireAdmin: ['Super Admin', 'Sales', 'Finance']
           },
         },
 
@@ -119,6 +129,15 @@ const router = createRouter({
           path: 'master/users/:kodeUser',
           name: 'detail user',
           component: () => import('../views/Admin/Users/DetailUserView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin']
+          },
+        },
+        {
+          path: 'master/users/:kodeUser/edit',
+          name: 'edit user',
+          component: () => import('../views/Admin/Users/EditUserView.vue'),
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin']
@@ -170,13 +189,22 @@ const router = createRouter({
           component: () => import('../views/Admin/Credit Packages/CreditPackagesView.vue'),
           meta: {
             requireAuth: true,
-            requireAdmin: ['Super Admin', 'Sales', 'Finance']
+            requireAdmin: ['Super Admin', 'Finance']
           },
         },
         {
           path: 'master/credit-packages/create',
           name: 'create credit package',
           component: () => import('../views/Admin/Credit Packages/CreateCreditPackagesView.vue'),
+          meta: {
+            requireAuth: true,
+            requireAdmin: ['Super Admin', 'Finance']
+          },
+        },
+        {
+          path: 'master/credit-packages/:kodePaketKredit/edit',
+          name: 'edit credit package',
+          component: () => import('../views/Admin/Credit Packages/EditCreditPackageView.vue'),
           meta: {
             requireAuth: true,
             requireAdmin: ['Super Admin', 'Finance']
@@ -268,30 +296,7 @@ const router = createRouter({
       meta: {
         requireGuest: true
       },
-      // beforeEnter: (to, from, next) => {
-      //   const router = useRouter();
-      //   const store = userAuthStore();
-      //   // console.log(store.getAccessToken, 'Before Enter')
-      //   next()
-      //   // if (to.meta.requireGuest && store.getAccessToken) {
-      //   //   router.push({
-      //   //     name: 'home'
-      //   //   });
-      //   // } else {
-      //   //   next();
-      //   // }
-      // }
     },
-    {
-      path: '/forbidden',
-      name: 'forbidden',
-      component: () => import('../views/ForbiddenView.vue')
-    },
-    {
-      path: '/:pathMatch(.*)*',
-      name: 'not found',
-      component: () => import('../views/NotFoundView.vue')
-    }
   ]
 })
 

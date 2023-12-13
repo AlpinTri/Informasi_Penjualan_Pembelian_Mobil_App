@@ -4,7 +4,7 @@
     <main>
       <RouterView></RouterView>
     </main>
-    <FooterView v-show="route.name !== 'search'"></FooterView>
+    <FooterView v-show="route.name !== 'search' && route.name !== 'not found'"></FooterView>
   </div>
 </template>
 

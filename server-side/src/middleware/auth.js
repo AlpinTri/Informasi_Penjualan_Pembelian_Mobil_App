@@ -4,13 +4,7 @@ function authentication(req, res, next) {
   try {
     const header = req.headers.authorization || req.headers.Authorization;
 
-    if (!header) {
-      res.status(401).json({
-        code: 401,
-        message: "Authentication credentials were missing or incorrect"
-      });
-      return;
-    }
+    if (!header) throw new Error('MISSING_AUTHENTICATION_ERROR');
 
     const token = header.split(' ')[1];
     
@@ -20,13 +14,19 @@ function authentication(req, res, next) {
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
       res.status(401).json({
-        code: 401,
-        message: "Token expired"
+        status: 401,
+        error: "TOKEN_EXPIRED"
       });
-    } else {
+    } else if (err.message === 'MISSING_AUTHENTICATION_ERROR') {
       res.status(401).json({
-        code: 401,
-        message: "Invalid"
+        status: 401,
+        error: "MISSING_AUTHENTICATION_CREDENTIALS"
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
       });
     }
 
@@ -71,7 +71,10 @@ function adminAndSales(req, res, next) {
 
     next()
   } catch (err) {
-    console.error(err.message);
+    res.status(500).json({
+      status: 500,
+      error: 'INTERNAL_SERVER_ERROR'
+    });
   }
 }
 
@@ -92,7 +95,10 @@ function allAdmin(req, res, next) {
 
     next();
   } catch (err) {
-    console.error(err.message);
+    res.status(500).json({
+      status: 500,
+      error: 'INTERNAL_SERVER_ERROR'
+    });
   }
 }
 
@@ -113,7 +119,10 @@ function admin(req, res, next) {
 
     next();
   } catch (err) {
-    console.error(err.message);
+    res.status(500).json({
+      status: 500,
+      error: 'INTERNAL_SERVER_ERROR'
+    });
   }
 }
 

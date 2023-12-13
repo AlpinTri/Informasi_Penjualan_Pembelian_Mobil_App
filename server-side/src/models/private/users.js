@@ -35,9 +35,15 @@ function create({kodeUser, nama, jenisKelamin, telp, password, status, createdAt
   return result;
 }
 
-function update({kodeUser, nama, jenisKelamin, telp, password, status, updatedAt}) {
-  const query = `UPDATE user SET nama = '${nama}', jenis_kelamin = '${jenisKelamin}', no_telp = '${telp}', password = '${password}', status = '${status}', updated_at = '${updatedAt}'
-                WHERE kode_user = '${kodeUser}'`;
+function update({ kodeUser, nama, jenisKelamin, telp, password, status, updatedAt }) {
+  let query;
+  if (password) {
+    query = `UPDATE user SET nama = '${nama}', jenis_kelamin = '${jenisKelamin}', no_telp = '${telp}', password = '${password}', status = '${status}', updated_at = '${updatedAt}'
+            WHERE kode_user = '${kodeUser}'`;
+  } else {
+    query = `UPDATE user SET nama = '${nama}', jenis_kelamin = '${jenisKelamin}', no_telp = '${telp}', status = '${status}', updated_at = '${updatedAt}'
+            WHERE kode_user = '${kodeUser}'`;
+  }
 
   const result = dbPool.execute(query);
   return result;

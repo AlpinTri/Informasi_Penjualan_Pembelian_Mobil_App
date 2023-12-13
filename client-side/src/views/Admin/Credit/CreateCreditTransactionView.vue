@@ -69,21 +69,35 @@
                   </select>
                 </div>
                 <div class="input-group">
-                  <label for="" class="label">Bunga (%)</label>
-                  <select name="" id="" v-model="creditData.bunga" @change="changeBunga">
-                    <option value="" selected disabled>Pilih bunga yang tersedia</option>
-                    <option :value="item" v-for="item in bunga" :key="item">{{ item }}</option>
-                  </select>
-                </div>
-              </div>
-              <div class="wrapper-input-form">
-                <div class="input-group">
                   <label for="" class="label">Tenor</label>
                   <select name="" id="" v-model="creditData.tenor" @change="changeTenor">
                     <option value="" selected disabled>Pilih tenor / jangka waktu yang tersedia</option>
                     <option :value="item" v-for="item in tenor" :key="item">{{ item }}</option>
                   </select>
                 </div>
+                <!-- <div class="input-group">
+                  <label for="" class="label">Bunga (%)</label>
+                  <select name="" id="" v-model="creditData.bunga" @change="changeBunga">
+                    <option value="" selected disabled>Pilih bunga yang tersedia</option>
+                    <option :value="item" v-for="item in bunga" :key="item">{{ item }}</option>
+                  </select>
+                </div> -->
+              </div>
+              <div class="wrapper-input-form">
+                <div class="input-group">
+                  <label for="" class="label">Bunga (%)</label>
+                  <select name="" id="" v-model="creditData.bunga" @change="changeBunga">
+                    <option value="" selected disabled>Pilih bunga yang tersedia</option>
+                    <option :value="item" v-for="item in bunga" :key="item">{{ item }}</option>
+                  </select>
+                </div>
+                <!-- <div class="input-group">
+                  <label for="" class="label">Tenor</label>
+                  <select name="" id="" v-model="creditData.tenor" @change="changeTenor">
+                    <option value="" selected disabled>Pilih tenor / jangka waktu yang tersedia</option>
+                    <option :value="item" v-for="item in tenor" :key="item">{{ item }}</option>
+                  </select>
+                </div> -->
                 <div class="input-group">
                   <label for="" class="label">Total Cicilan Per Bulan</label>
                   <input type="text" readonly :value="rupiah.format(creditData.cicilanPerBulan)">
@@ -123,11 +137,19 @@
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
+import { useRouter } from "vue-router";
+
+const emit = defineEmits(['successCreate']);
+
+const router = useRouter();
 
 const store = userAuthStore();
+const token = store.getToken();
 const form = new FormData();
 
 const inputKTPImage = ref(null);
@@ -158,8 +180,8 @@ const carColors = reactive([]);
 // Credit Package Data
 const paketKredit = reactive([]);
 const uangMuka = reactive(new Set());
-const bunga = reactive(new Set());
-const tenor = reactive([]);
+const tenor = reactive(new Set());
+const bunga = reactive([]);
 
 // Format IDR
 const rupiah = new Intl.NumberFormat('id-ID', {
@@ -192,8 +214,8 @@ function changeTypeMobil() {
   creditData.warnaMobil = '';
   creditData.hargaMobil = '';
   uangMuka.clear();
-  bunga.clear();
-  tenor.splice(0, tenor.length);
+  tenor.clear();
+  bunga.splice(0, tenor.length);
   creditData.cicilanPerBulan = '';
 }
 
@@ -205,8 +227,8 @@ function changeWarnaMobil() {
 
   // Clear Data While Color Car Change
   uangMuka.clear();
-  bunga.clear();
-  tenor.splice(0, tenor.length);
+  tenor.clear();
+  bunga.splice(0, tenor.length);
   creditData.cicilanPerBulan = '';
 
 
@@ -214,29 +236,30 @@ function changeWarnaMobil() {
 }
 
 function changeUangMuka() {
-  bunga.clear();
-  tenor.splice(0, tenor.length);
+  tenor.clear();
+  bunga.splice(0, tenor.length);
   creditData.cicilanPerBulan = '';
 
-  // console.log(creditData.totalUangMuka.replace(/[^\d,]/g, '').replace(',', '.'))
   const percentUangMuka = parseFloat(creditData.totalUangMuka.replace(/[^\d,]/g, '').replace(',', '.')) / creditData.hargaMobil * 100
   creditData.uangMuka = percentUangMuka;
+  paketKredit.forEach(item => item.uang_muka === creditData.uangMuka ? tenor.add(item.tenor) : '');
 
   // Add Bunga To Select Element
-  paketKredit.forEach(item => item.uang_muka === creditData.uangMuka ? bunga.add(item.bunga) : '');
-}
-
-function changeBunga() {
-  creditData.cicilanPerBulan = '';
-
-  paketKredit.forEach(item => item.bunga === creditData.bunga && item.uang_muka === creditData.uangMuka ? tenor.push(item.tenor) : '');
+  // paketKredit.forEach(item => item.uang_muka === creditData.uangMuka ? bunga.add(item.bunga) : '');
 }
 
 function changeTenor() {
+  creditData.cicilanPerBulan = '';
+  // tenor.splice(0, tenor.length);
+  bunga.splice(0, tenor.length);
+  
+  // paketKredit.forEach(item => item.bunga === creditData.bunga && item.uang_muka === creditData.uangMuka ? tenor.push(item.tenor) : '');
+  paketKredit.forEach(item => item.tenor === creditData.tenor && item.uang_muka === creditData.uangMuka ? bunga.push(item.bunga) : '');
+}
+
+function changeBunga() {
   const hargaPokok = creditData.hargaMobil - parseFloat(creditData.totalUangMuka.replace(/[^\d,]/g, '').replace(',', '.'));
   const totalBunga = (hargaPokok * creditData.bunga / 100) / 12 * creditData.tenor;
-  console.log(totalBunga)
-  console.log(hargaPokok)
   const hargaKredit = hargaPokok + totalBunga;
 
   creditData.cicilanPerBulan = hargaKredit / creditData.tenor;
@@ -250,7 +273,6 @@ async function submit() {
     form.append('kodePaket', idPaketKredit[0].kode_paket);
     form.append('nik', creditData.nik);
 
-    console.log(form.entries())
     await createCredit(form)
   } catch (err) {
     console.log(err)
@@ -265,12 +287,65 @@ async function createCredit(data) {
       url: `http://localhost:5000/api/credits`,
       data,
       headers: {
-        authorization: `Bearer ${store.getAccessToken}`
+        Authorization: `Bearer ${token}`
       }
     });
 
-    console.log(response)
+    const responseStatus = response.data.status;
+    if (responseStatus >= 200 && responseStatus < 300) {
+      emit('successCreate');
+      router.push({
+        name: 'credit transactions'
+      });
+    }
   } catch (err) {
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+        failedInsert.value = true
+
+      } else if (err.response.data.error === 'MISSING_IMAGE_FILE') {
+        toast.error('Gambar tidak boleh kosong');
+      } else {
+        toast.error('Network error, coba beberapa saat lagi');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server, coba beberapa saat lagi');
+
+    }
     console.log(err)
   }
 }
@@ -279,14 +354,11 @@ onMounted(async () => {
   try {
     const responseCars = await axios({
       method: 'GET',
-      url: `http://localhost:5000/api/cars`,
-      headers: {
-        authorization: `Bearer ${store.getAccessToken}`,
-      }
+      url: `http://localhost:5000/api/v1/cars`,
     });
 
     const carData = responseCars.data.data;
-    console.log(carData);
+
     carData.forEach(item => {
       cars.push(item);
       carTypes.add(item.type);
@@ -294,23 +366,58 @@ onMounted(async () => {
 
     const responsePaketKredit = await axios({
       method: 'GET',
-      url: `http://localhost:5000/api/credit-packages`,
-      headers: {
-        authorization: `Bearer ${store.getAccessToken}`,
-      }
+      url: `http://localhost:5000/api/v1/credit-packages`,
     })
 
     const paketKreditData = responsePaketKredit.data.data;
-    console.log(paketKreditData)
+
     paketKreditData.forEach(item => {
       paketKredit.push(item);
-      // uangMuka.add(item.uang_muka);
     });
 
-    console.log(uangMuka)
-    console.log(carTypes)
   } catch (err) {
     console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error, coba beberapa saat lagi');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server, coba beberapa saat lagi');
+
+    }
   }
 })
 </script>

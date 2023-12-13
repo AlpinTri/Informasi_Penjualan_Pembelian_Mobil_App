@@ -46,7 +46,7 @@
                   <input type="text" v-model="data.bahanBakar">
                 </div>
                 <div class="input-group">
-                  <label for="" class="label">Kapasitas Mesin</label>
+                  <label for="" class="label">Kapasitas Mesin (cc/kWh)</label>
                   <input type="number" v-model="data.kapasitasMesin">
                 </div>
               </div>
@@ -71,7 +71,7 @@
               </div>
             </div>
           </div>
-          <button class="submit-button" type="submit">Simpan</button>
+          <button class="submit-button" type="submit" :disabled="failedInsert">Simpan</button>
         </form>
       </div>
     </div>
@@ -79,9 +79,17 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import axios, {AxiosError} from 'axios';
 import userAuthStore from '@/stores/auth';
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css';
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+const emit = defineEmits(['successCreate']);
+
+const failedInsert = ref(false);
 
 const inputImage = ref(null);
 const previewImage = ref(null);
@@ -89,6 +97,7 @@ const previewImage = ref(null);
 function addFile(event) {
   previewImage.value.src = URL.createObjectURL(event.target.files[0]);
   previewImage.value.classList.add('d-flex');
+  console.log(event.target.files)
   form.append('gambar', event.target.files[0]);
 }
 
@@ -112,15 +121,26 @@ const data = reactive({
   jenisTransmisi: '',
   harga: '',
   seat: '',
-  statusPenjualan: 'Dijual'
+  statusPenjualan: 1,
 });
 const store = userAuthStore();
 const token = store.getToken();
 const form = new FormData();
 
+watch(
+  () => data.seat,
+  () => {
+    if (data.seat < 2 && data.seat) {
+      toast.warn('Jumlah seat tidak boleh kurang dari 2');
+    }
+  }
+)
 
 async function createCar() {
   try {
+
+    if (toggle[0].status) data.statusPenjualan = 1;
+    if (toggle[1].status) data.statusPenjualan = 0;
 
     Object.keys(data).forEach(key => form.append(`${key}`, data[key]));
 
@@ -134,13 +154,62 @@ async function createCar() {
       }
     });
 
-    console.log(response)
+    const responseStatus = response.data.status;
+    if (responseStatus >= 200 && responseStatus < 300) {
+      emit('successCreate')
+      router.push({
+        name: 'cars'
+      });
+    }
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+        failedInsert.value = true
+
+      } else if (err.response.data.error === 'MISSING_CAR_IMAGE_FILE') {
+        toast.error('Gambar tidak boleh kosong');
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log('somthing error')
+      toast.error('Terjadi kesalahan pada server');
+
     }
+    console.log(err)
   }
 }
 

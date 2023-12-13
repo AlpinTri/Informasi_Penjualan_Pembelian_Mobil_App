@@ -1,29 +1,16 @@
 <template>
   <section>
-    <div class="card-wrapper" ref="modal">
-      <form class="card" @submit.prevent="addCicilan">
-        <span class="card-header">Masukkan Kode Kredit</span>
-        <div class="input-group">
-          <label for="" class="label">Kode Kredit</label>
-          <input type="text" v-model="kodeKredit">
-        </div>
-        <div class="button-group">
-          <span class="button cancel-button" @click="showModal">Cancel</span>
-          <button type="submit" class="button ok-button">Ok</button>
-        </div>
-      </form>
-    </div>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-title-page">
         <div class="wrapper-title">
           <span class="domain">Detail Transaksi Kredit</span>
           <span class="slash">/</span>
           <span class="codomain">{{ route.params.kodeTransaksi }}</span>
         </div>
-        <button class="edit-button">
+        <!-- <button class="edit-button">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
           <span class="header-button">Edit</span>
-        </button>
+        </button> -->
       </div>
       <div class="container-content">
         <div class="container-data">
@@ -129,10 +116,10 @@
           <div class="container-tools">
             <div class="tools">
               <h3 class="header-data-cicilan">Detail Pembayaran</h3>
-              <svg @click="showModal" class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <svg @click="openCicilanModal" class="add-icon" xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
               <span class="tambah-cicilan">Tambah cicilan</span>
             </div>
-            <div class="input-group filter">
+            <div class="input-group filter" v-show="dataCicilan.length">
               <label for="" class="label">Urutkan</label>
               <select name="" id="" v-model="filter" @change="changeFilter">
                 <option value="Terlama">Terlama</option>
@@ -140,7 +127,7 @@
               </select>
             </div>
           </div>
-          <ul class="container-list">
+          <ul class="container-list" v-show="dataCicilan.length">
             <li class="container-data-row list-data-cicilan" v-for="item in dataCicilan" :key="item.kode_cicilan">
               <div class="wrapper-data">
                 <div class="header-detail-data">Cicilan Ke</div>
@@ -162,93 +149,165 @@
                 <div class="header-detail-data">Tanggal Dibayar</div>
                 <div class="data">{{ new Date(item.tanggal).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', }) }}</div>
               </div>
-              <RouterLink class="detail-icon" :to="{name: 'detail credit transaction', params: {kodeTransaksi: 123}}">
+              <!-- <RouterLink class="detail-icon" :to="{name: 'detail credit transaction', params: {kodeTransaksi: 123}}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M9 18l6-6-6-6"/></svg>
-              </RouterLink>
-              <svg @click="removeCicilan(item.kode_cicilan, item.cicilan_ke)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </RouterLink> -->
+              <svg @click="openDeleteModal(item.kode_cicilan, item.cicilan_ke)" class="delete-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#495057" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
             </li>
           </ul>
+          <div v-show="!dataCicilan.length" class="container-error">
+            <div class="searching-something">Customer belum melakukan pembayaran cicilan</div>
+          </div>
         </div>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
+    <Transition name="fade">
+      <AddCicilanModalView 
+        v-if="isOpenCicilanModal" 
+        @close="openCicilanModal"
+        @add="addCicilan"
+      ></AddCicilanModalView>
+    </Transition>
+    <Transition name="fade">
+      <DeleteModalView 
+        v-if="isOpenDeleteModal" 
+        @click="openDeleteModal" 
+        @delete="removeCicilan"
+      ></DeleteModalView>
+    </Transition>
+
   </section>
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import AddCicilanModalView from "../../../components/AddCicilanModalView.vue";
+import DeleteModalView from "../../../components/DeleteModalView.vue";
+
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth';
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
 const userInfo = store.getUserInfo();
 
+const error = ref(false);
+
 const route = useRoute();
 const router = useRouter();
 
-// Data
-
-// Manupulation Elements
-const detailCustomerIcon = ref(null);
-const detailCustomer = ref(null);
-const detailKreditIcon = ref(null);
-const detailKredit = ref(null);
-
-function collapse(keyword) {
-  if (keyword == 'customer') {
-    detailCustomerIcon.value.classList.toggle('rotate-180');
-    detailCustomer.value.classList.toggle('height-76');
-    return;
-  }
-  detailKreditIcon.value.classList.toggle('rotate-180');
-  detailKredit.value.classList.toggle('height-76');
-}
-
-
-
-const modal = ref(null);
-const kodeKredit = ref('')
 const filter = ref('Terlama');
 
-function showModal() {
-  modal.value.classList.toggle('d-flex');
+const deleteData = reactive({
+  cicilanKe: '',
+  kodeCicilan: ''
+});
+
+const isOpenCicilanModal = ref(false);
+const isOpenDeleteModal = ref(false);
+
+function openCicilanModal() {
+  isOpenCicilanModal.value = !isOpenCicilanModal.value;
 }
 
-async function removeCicilan(kodeCicilan, cicilanKe) {
+function openDeleteModal(id, cicilan) {
+  isOpenDeleteModal.value = !isOpenDeleteModal.value;
+  if (isOpenDeleteModal.value) {
+    deleteData.kodeCicilan = id;
+    deleteData.cicilanKe = cicilan;
+    return;
+  }
+
+  deleteData.kodeCicilan = '';
+  deleteData.cicilanKe = '';
+}
+
+async function removeCicilan() {
   try {
     if (filter.value === 'Terlama') {
-      if (dataCicilan[dataCicilan.length - 1].cicilan_ke != cicilanKe) {
-        return console.log('cannot delete');
+      if (dataCicilan[dataCicilan.length - 1].cicilan_ke != deleteData.cicilanKe) {
+        toast.warning('Hanya bisa menghapus cicilan terbaru')
+        return;
       }
-
-      console.log('ok')
     } else {
-      if (dataCicilan[0].cicilan_ke != cicilanKe) {
-        return console.log('cannot delete 2');
+      if (dataCicilan[0].cicilan_ke != deleteData.cicilanKe) {
+        toast.warning('Hanya bisa menghapus cicilan terbaru');
+        return;
       }
-      console.log('ok 2');
     }
 
     const response = await axios({
       baseURL: 'http://localhost:5000/api',
       method: 'DELETE',
-      url: `/installment-payments/${kodeCicilan}`,
+      url: `/installment-payments/${deleteData.kodeCicilan}`,
       headers: {
         Authorization: `Bearer ${token}`
       }
     });
 
-    const index = dataCicilan.findIndex(item => item.kode_cicilan == kodeCicilan);
-    dataCicilan.splice(index, 1)
+    await changeFilter()
+    toast.success('Berhasil menghapus data');
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeKredit'" || err.response.data.error === 'FAILED_TO_DELETE_DATA' || err.response.data.error === 'DATA_NOT_FOUND' || err.response.data.error === 'FAILED_TO_UPDATE_DATA') {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
-async function addCicilan() {
+async function addCicilan(state, id) {
   try {
-    if (kodeKredit.value == route.params.kodeTransaksi) {
+    if (state) {
       const response = await axios({
         baseURL: `http://localhost:5000/api`,
         method: 'POST',
@@ -257,18 +316,64 @@ async function addCicilan() {
           Authorization: `Bearer ${token}`
         },
         data: {
-          kodeKredit: kodeKredit.value
+          kodeKredit: id
         }
       });
-  
-      if (response.status == 201) {
+
+      if (response.data.status === 201) {
         await changeFilter();
-        showModal();
-        kodeKredit.value = '';
+        toast.success('Berhasil menambahkan cicilan')
       }
+      openCicilanModal();
+      return;
     }
+
+    toast.info('Mohon masukkan kode kredit yang sesuai')
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -288,7 +393,47 @@ async function changeFilter() {
     const data = response.data.data;
     data.forEach(item => dataCicilan.push(item));
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if(err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -301,7 +446,6 @@ const rupiah = new Intl.NumberFormat('id-ID', {
   currency: 'IDR'
 });
 
-
 const uangMuka = computed(() => {
   return dataDetailKredit.harga * dataDetailKredit.uang_muka / 100;
 });
@@ -313,7 +457,6 @@ const cicilanPerBulan = computed(() => {
 
   return totalKredit / dataDetailKredit.tenor;
 });
-
 
 onMounted(async () => {
   try {
@@ -330,12 +473,74 @@ onMounted(async () => {
     Object.keys(detailKredit[0]).forEach(key => dataDetailKredit[key] = detailKredit[0][key]);
     cicilan.forEach(item => dataCicilan.push(item));
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeKredit'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 });
 
 
 
+
+// Manupulation Elements
+const detailCustomerIcon = ref(null);
+const detailCustomer = ref(null);
+const detailKreditIcon = ref(null);
+const detailKredit = ref(null);
+
+function collapse(keyword) {
+  if (keyword == 'customer') {
+    detailCustomerIcon.value.classList.toggle('rotate-180');
+    detailCustomer.value.classList.toggle('height-76');
+    return;
+  }
+  detailKreditIcon.value.classList.toggle('rotate-180');
+  detailKredit.value.classList.toggle('height-76');
+}
 </script>
 
 <style scoped>
@@ -343,7 +548,8 @@ section{
   width: calc(100% - 250px);
   margin-left: 250px;
   overflow-x: hidden;
-  position: relative;
+  display: flex;
+  flex-direction: column;
 }
 .container{
   width: 95%;
@@ -498,8 +704,8 @@ section{
 .cicilan{
   background-color: #82d114;
   width: fit-content;
-  padding: 2px;
-  border-radius: 5px;
+  padding: 1px 5px;
+  border-radius: 3px;
   color: #fff;
   font-size: 14px;
 }
@@ -641,5 +847,32 @@ select, input[type="text"]{
 }
 .height-76{
   height: 76px;
+}
+
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
 }
 </style>

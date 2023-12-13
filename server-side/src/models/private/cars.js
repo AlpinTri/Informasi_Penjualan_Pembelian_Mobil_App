@@ -31,22 +31,22 @@ function search(q) {
   return data;
 }
 
-function create({kodeMobil, merk, type, warna, bahanBakar, kapasitasMesin, jenisTransmisi, harga, gambar, createdAt, updatedAt}) {
-  const query = `INSERT INTO mobil(kode_mobil, merk, type, warna, bahan_bakar, kapasitas_mesin, jenis_transmisi, harga, gambar, created_at, updated_at)
-                VALUES ('${kodeMobil}','${merk}','${type}','${warna}','${bahanBakar}','${kapasitasMesin}','${jenisTransmisi}','${harga}','${gambar}','${createdAt}','${updatedAt}')`;
+function create({kodeMobil, merk, type, warna, bahanBakar, kapasitasMesin, jenisTransmisi, harga, gambar, status, seat, createdAt, updatedAt}) {
+  const query = `INSERT INTO mobil(kode_mobil, merk, type, warna, bahan_bakar, kapasitas_mesin, jenis_transmisi, harga, gambar, status_penjualan, jumlah_seat, created_at, updated_at)
+                VALUES ('${kodeMobil}','${merk}','${type}','${warna}','${bahanBakar}','${kapasitasMesin}','${jenisTransmisi}','${harga}','${gambar}','${status}', '${seat}','${createdAt}','${updatedAt}')`;
 
   const result = dbPool.execute(query);
 
   return result;
 }
 
-function update({ kodeMobil, merk, type, warna, bahanBakar, kapasitasMesin, jenisTransmisi, harga, gambar, updatedAt }) {
+function update({ kodeMobil, merk, type, warna, bahanBakar, kapasitasMesin, jenisTransmisi, harga, gambar, seat, status, updatedAt }) {
   let query;
   if (!gambar) {
-    query = `UPDATE mobil SET merk = '${merk}', type = '${type}', warna = '${warna}', bahan_bakar = '${bahanBakar}', kapasitas_mesin = '${kapasitasMesin}', jenis_transmisi = '${jenisTransmisi}', harga = '${harga}', updated_at = '${updatedAt}'
+    query = `UPDATE mobil SET merk = '${merk}', type = '${type}', warna = '${warna}', bahan_bakar = '${bahanBakar}', kapasitas_mesin = '${kapasitasMesin}', jenis_transmisi = '${jenisTransmisi}', harga = '${harga}', status_penjualan = '${status}', jumlah_seat = '${seat}', updated_at = '${updatedAt}'
             WHERE kode_mobil = '${kodeMobil}'`;
   } else {
-    query = `UPDATE mobil SET merk = '${merk}', type = '${type}', warna = '${warna}', bahan_bakar = '${bahanBakar}', kapasitas_mesin = '${kapasitasMesin}', jenis_transmisi = '${jenisTransmisi}', harga = '${harga}', gambar = '${gambar}', updated_at = '${updatedAt}'
+    query = `UPDATE mobil SET merk = '${merk}', type = '${type}', warna = '${warna}', bahan_bakar = '${bahanBakar}', kapasitas_mesin = '${kapasitasMesin}', jenis_transmisi = '${jenisTransmisi}', harga = '${harga}', gambar = '${gambar}', status_penjualan = '${status}', jumlah_seat = '${seat}', updated_at = '${updatedAt}'
             WHERE kode_mobil = '${kodeMobil}'`;
   }
 

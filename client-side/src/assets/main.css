@@ -2,8 +2,27 @@
 *{
   padding: 0;
   margin: 0;
-  font-family: 'Roboto', 'Segoe UI', 'Open Sans', Poppins, Verdana, sans-serif;
+  font-family: 'Roboto';
   list-style: none;
   text-decoration: none;
   box-sizing: border-box;
+}
+
+.fade-enter-from{
+  transform: translateY(-30px);
+  opacity: 0;
+}
+.fade-leave-from,
+.fade-enter-to{
+  transform: translateY(0);
+  opacity: 1;
+}
+.fade-leave-to{
+  transform: translateY(30px);
+  opacity: 0;
+}
+
+.fade-enter-active,
+.fade-leave-active{
+  transition: all .25s ease;
 }

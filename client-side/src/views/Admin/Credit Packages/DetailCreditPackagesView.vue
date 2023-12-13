@@ -1,10 +1,16 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
-        <span class="domain">Paket Kredit</span>
-        <span class="slash">/</span>
-        <span class="codomain">Create</span>
+        <div class="container-title-page">
+          <span class="domain">Paket Kredit</span>
+          <span class="slash">/</span>
+          <span class="codomain">Detail</span>
+        </div>
+        <RouterLink :to="{ name: 'edit credit package', params: { kodePaketKredit: route.params.kodePaketKredit } }" class="edit-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
+          <span class="header-button">Edit</span>
+        </RouterLink>
       </div>
       <div class="container-bottom">
         <form class="form" action="#">
@@ -12,40 +18,53 @@
             <div class="container-form-top">
               <div class="input-group">
                 <label for="" class="label">Uang Muka (%)</label>
-                <input type="text" readonly v-model="data.uang_muka">
+                <input type="text" v-model="data.uang_muka" readonly>
               </div>
-              <span class="unit">%</span>
-            </div>
-            <div class="container-form-middle">
               <div class="input-group">
-                <label for="" class="label">Bunga Per Tahun (%)</label>
-                <input type="text" readonly v-model="data.bunga">
+                <label for="" class="label">Status Keaktifan</label>
+                <select name="" id="">
+                  <option value="" selected disabled>{{ data.status_keaktifan ? 'Aktif' : 'Tidak aktif' }}</option>
+                </select>
               </div>
-              <span class="unit">%</span>
             </div>
             <div class="container-form-bottom">
               <div class="input-group">
-                <label for="" class="label">Tenor (Bulan)</label>
-                <input type="text" readonly v-model="data.tenor">
+                <label for="" class="label">Suku Bunga per Tahun (%)</label>
+                <input type="text" v-model="data.bunga" readonly>
               </div>
-              <span class="unit">Bulan</span>
+              <div class="input-group">
+                <label for="" class="label">Tenor (bulan)</label>
+                <input type="text" v-model="data.tenor" readonly>
+              </div>
             </div>
           </div>
         </form>
+      </div>
+    </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
       </div>
     </div>
   </section>
 </template>
 
 <script setup>
-import axios from "axios";
-import { onMounted, reactive } from "vue";
-import { useRoute } from "vue-router";
+import axios, { AxiosError } from "axios";
+import { onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import userAuthStore from '@/stores/auth'
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const route = useRoute();
 const store = userAuthStore();
 const token = store.getToken();
+
+const router = useRouter();
+const error = ref(false);
 
 const data = reactive({});
 
@@ -62,7 +81,53 @@ onMounted(async () => {
 
     Object.keys(response.data.data[0]).map(key => data[key] = response.data.data[0][key]);
   } catch (err) {
-    console.log(err);
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodePaket'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 });
 
@@ -93,8 +158,8 @@ section{
 .container-top{
   display: flex;
   align-items: center;
-  gap: .5rem;
-  padding-inline: 1rem;
+  justify-content: space-between;
+  /* padding-inline: 1rem; */
 }
 .domain, .slash{
   font-weight: 600;
@@ -105,15 +170,12 @@ section{
   font-weight: 600;
   color: #2753d8;
 }
-.unit{
-  width: 5%;
-}
+
 /* Right */
-.container-form-top, .container-form-bottom, .container-form-middle{
+.container-form-top, .container-form-bottom{
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: .5rem;
+  gap: 20px;
 }
 .container-form-top > .input-group, .container-form-bottom > .input-group{
   width: calc(100%/2);
@@ -153,129 +215,54 @@ input[type="text"], select{
   border: 1px solid rgba(0, 0, 0, 0.1);
   font-family: Roboto;
 }
-.rp{
-  padding-inline-end: 10px;
-  padding-inline-start: 1rem;
-  border-inline-end: 1px solid #000;
-  position: absolute;
-  
-}
-.money{
-  position: relative;
+
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
   display: flex;
+  justify-content: center;
   align-items: center;
-}
-.money > input{
-  padding-left: 55px;
-}
-.submit-button{
-  padding: 10px;
-  font-family: Roboto;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: transparent;
-  background-color: #2753d8;
-  color: #fff;
-}
-.submit-button:hover{
-  background-color: #2b5ae5;
-}
-/* section{
-  width: 96%;
-  margin: auto;
-  margin-top: 1rem;
-  display: flex;
+  gap: .25rem;
   flex-direction: column;
-  gap: 1rem;
-}
-.page{
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-}
-.page > div{
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-.page > div:last-child{
-  font-size: 1.2rem;
-  color: #2753d8;
-}
-form{
-  background-color: #f8f9fa;
   border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  gap: 20px;
-  flex-direction: column;
-}
-.input-group{
-  display: flex;
-  position: relative;
-  gap: .5rem;
-  align-items: center;
-}
-.container-input{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.container-input-group{
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-.container-input-group > div.input-group{
-  width: 100%;
-}
-.label{
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 13px;
-  transform: translate(15px, -50%);
-  z-index: 0;
-  background-color: #f8f9fa;
-  transition: 1s ease;
-  color: rgba(0, 0, 0, 0.8);
-  padding-inline: 2px;
-  font-family: Roboto;
-}
-input[type="text"], select{
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  width: 100%;
-  outline: none;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  font-family: Roboto;
-}
-button{
-  padding: 10px;
-  font-family: Roboto;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: transparent;
-  background-color: #2753d8;
-  color: #fff;
-}
-button:hover{
-  background-color: #2e60f4;
 }
 
-/* input{
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  width: 100%;
-  outline: none;
-  border-radius: 8px;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  font-family: Roboto;
-} 
-.d-flex{
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
+}
+
+.container-title-page{
   display: flex;
-} */
+  align-items: center;
+  gap: .5rem;
+  padding-inline: 1rem;
+}
+.edit-button{
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  gap: 6px;
+  background-color: #2753d8;
+  outline: none;
+  border: none;
+  border-radius: 8px;
+  margin-inline-end: 1rem;
+}
+.header-button{
+  font-family: 'Roboto';
+  font-size: 15px;
+  color: #fff;
+}
 </style>

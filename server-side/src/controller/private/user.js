@@ -27,11 +27,21 @@ async function getUsers(req, res) {
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-    res.status(502).json({
-      message: 'Server error'
-    });
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
 
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
   }
 }
 
@@ -39,30 +49,48 @@ async function getUsersById(req, res) {
   try {
     
     const { kodeUser } = req.params;
+
+    if (!kodeUser) throw new Error('MISSING_PARAMS_ERROR');
+
     const [data] = await find(kodeUser);
 
-    if (!data.length) {
-      res.status(404).json({
-        status: 404,
-        message: 'Data not found',
-      });
-
-      return;
-    }
+    if (!data.length) throw new Error('NOT_FOUND_ERROR');
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
       data: data
     });
 
   } catch (err) {
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error.'
-    });
-    
-    console.log(err.message);
+    const expression = /connect ECONNREFUSED/i;
+
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'NOT_FOUND_ERROR') {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else if (err.message === 'MISSING_PARAMS_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeUser'"
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+
+    console.log(err.message)
   }
 }
 
@@ -85,29 +113,38 @@ async function createUser(req, res) {
 
     const [result] = await create(data);
 
-    if (!result.affectedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'Internal server error.',
-      });
+    if (!result.affectedRows) throw new Error('FAILED_INSERT_ERROR');
 
-      return;
-    }
     
     res.status(201).json({
       status: 201,
-      message: 'Created.',
+      message: 'CREATED',
       data: data
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-    res.status(500).json({
-      status: 500,
-      message: 'Internal server error.'
-    });
-    
-    console.log(err.message)
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'FAILED_INSERT_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: 'FAILED_TO_INSERT_DATA'
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+    }
+
+    console.log(err.message);
   }
 }
 
@@ -115,13 +152,16 @@ async function updateUser(req, res) {
   try {
     
     const { kodeUser } = req.params;
+    if (!kodeUser) throw new Error('MISSING_PARAMS_ERROR');
     const data = req.body;
 
     data.kodeUser = kodeUser;
 
-    // Hashing Password
-    const salt = await bcrypt.genSalt(10);
-    data.password = await bcrypt.hash(data.password, salt);
+    if (data.password) {
+      // Hashing New Password
+      const salt = await bcrypt.genSalt(10);
+      data.password = await bcrypt.hash(data.password, salt);
+    }
 
     // Timestamps
     const date = new Date();
@@ -130,68 +170,110 @@ async function updateUser(req, res) {
     const [result] = await update(data);
     
     // Is Updated??
-    if (!result.changedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'failed to update'
-      });
-
-      return;
-    }
+    if (!result.changedRows) throw new Error('FAILED_UPDATE_ERROR');
 
     res.status(201).json({
       status: 201,
-      message: 'Created',
+      message: 'CREATED',
       data: data
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-    res.status(500).json({
-      message: 'Internal server error'
-    });
-    console.log(err.message)
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (err.message === 'FAILED_UPDATE_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: 'FAILED_TO_UPDATE_DATA'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeUser'"
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
+
+    console.log(err.message);
   }
 }
 
 async function deleteUser(req, res) {
   try {
+
+    const { kodeUser } = req.params;
     
-    const {kodeUser} = req.params;
+    if (!kodeUser) throw new Error('MISSING_PARAMS_ERROR');
 
     const [user] = await find(kodeUser);
     
-    if (!user.length) {
-      res.status(404).json({
-        status: 404,
-        message: 'Data not found'
-      });
-
-      return;
-    }
+    if (!user.length) throw new Error('NOT_FOUND_ERROR');
 
     const [result] = await remove(kodeUser);
 
     // Is Deleted??
-    if (!result.affectedRows) {
-      res.status(500).json({
-        status: 500,
-        message: 'failed to update'
-      });
+    if (!result.affectedRows) throw new Error('FAILED_DELETE_ERROR');
 
-      return;
-    }
 
     res.status(200).json({
       status: 200,
-      message: 'Ok',
+      message: 'OK',
     });
 
   } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
+    const expressionForeign = /foreign key constraint/i;
 
-    res.status(502).json({
-      message: 'Server error'
-    });
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+
+    } else if (expressionForeign.test(err.message)) {
+      res.status(400).json({
+        status: 400,
+        error: 'CANNOT_DELETE_DATA, FOREIGN_KEY_CONSTRAINT'
+      });
+
+    } else if (err.message === 'FAILED_DELETE_ERROR') {
+      res.status(400).json({
+        status: 400,
+        error: 'FAILED_TO_DELETE_DATA'
+      });
+
+    } else if (err.message === "MISSING_PARAMS_ERROR") {
+      res.status(400).json({
+        status: 400,
+        error: "MISSING_PARAMS 'kodeUser'"
+      });
+
+    } else if (err.message === `NOT_FOUND_ERROR`) {
+      res.status(404).json({
+        status: 404,
+        error: 'DATA_NOT_FOUND'
+      });
+
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
+
+    }
     console.log(err.message)
   }
 }

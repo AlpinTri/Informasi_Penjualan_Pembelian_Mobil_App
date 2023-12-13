@@ -1,6 +1,6 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
         <span class="domain">Customer</span>
         <span class="slash">/</span>
@@ -55,6 +55,13 @@
         </form>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
   </section>
 </template>
 
@@ -62,12 +69,19 @@
 import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
 import { onMounted, reactive, ref } from "vue";
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
 
+const router = useRouter();
 const route = useRoute();
+
+const error = ref(false);
+const emit = defineEmits(['failedUpdate', 'successUpdate']);
+
 const previewImage = ref(null);
 const inputImage = ref(null);
 const form = new FormData();
@@ -110,12 +124,65 @@ async function updateCustomer() {
       data: form
     });
 
-    console.log(response);
 
     clearDataForm();
 
+    const responseStatus = response.data.status;
+    if (responseStatus >= 200 && responseStatus < 300) {
+      emit('successUpdate');
+      router.push({
+        name: 'customers'
+      });
+    }
+
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCustomer'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === "FAILED_TO_UPDATE_DATA") {
+        emit('failedUpdate');
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -130,10 +197,55 @@ onMounted(async () => {
       }
     });
 
-    console.log(response)
     Object.keys(response.data.data[0]).forEach(key => data[key] = response.data.data[0][key]);
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCustomer'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 });
 </script>
@@ -308,5 +420,31 @@ input[type="text"], input[type="tel"], select, textarea{
 
 .d-flex{
   display: flex;
+}
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
 }
 </style>

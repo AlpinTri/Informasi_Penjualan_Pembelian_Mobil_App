@@ -48,7 +48,7 @@
               <textarea class="text-area" name="" id="" cols="30" rows="5" v-model="customer.alamat"></textarea>
             </div>
           </div>
-          <button class="submit-button" type="submit">Simpan</button>
+          <button class="submit-button" type="submit" :disabled="failedInsert">Simpan</button>
         </form>
       </div>
     </div>
@@ -59,9 +59,18 @@
 import axios, { AxiosError } from "axios";
 import userAuthStore from '@/stores/auth';
 import { reactive, ref } from "vue";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
+import { useRouter } from "vue-router";
 
 const store = userAuthStore();
 const token = store.getToken();
+
+const router = useRouter();
+
+const emit = defineEmits(['successCreate']);
+
+const failedInsert = ref(false);
 
 const previewImage = ref(null);
 const inputImage = ref(null);
@@ -82,8 +91,8 @@ function addFile(event) {
 
 async function createCustomer() {
   try {
-    console.log(customer)
     Object.keys(customer).forEach(key => form.append(`${key}`, customer[key]));
+
     const response = await axios({
       method: 'POST',
       url: `http://localhost:5000/api/customers`,
@@ -93,13 +102,64 @@ async function createCustomer() {
       }
     });
 
-    console.log(response)
+    const responseStatus = response.data.status;
+    emit('successCreate');
+    if (responseStatus >= 200 && responseStatus < 300) {
+      router.push({
+        name: 'customers'
+      });
+    }
+
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err, 'axios error');
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "FAILED_TO_INSERT_DATA") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+        failedInsert.value = true
+
+      } else if (err.response.data.error === 'MISSING_CAR_IMAGE_FILE') {
+        toast.error('Gambar tidak boleh kosong');
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log(err, 'other error')
+      toast.error('Terjadi kesalahan pada server');
+
     }
+
+    console.log(err)
   }
 }
 </script>

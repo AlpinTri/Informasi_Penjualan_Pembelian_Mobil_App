@@ -12,7 +12,7 @@ async function countTransactionsByYear(year) {
       cash: cashResult
     }
   } catch (err) {
-    console.log(err, 'Count Data Model')
+    return false
   }
 
 }
@@ -36,7 +36,7 @@ async function countAllMaster() {
       cash: cashResult
     }
   } catch (err) {
-    console.log(err, 'Count Data Model')
+    return false
   }
 }
 

@@ -46,9 +46,9 @@
             </div>
           </div>
           <ul class="nav-dropdown-wrapper" ref="masterCollapse">
-            <RouterLink  v-show="user.status === 'Super Admin' || user.status === 'Sales'" :to="{name: 'cars'}" :class="isActive('cars')" class="dropdown-item">Mobil</RouterLink>
+            <RouterLink  v-show="user.status === 'Super Admin' || user.status === 'Sales' || user.status === 'Finance'" :to="{name: 'cars'}" :class="isActive('cars')" class="dropdown-item">Mobil</RouterLink>
             <RouterLink v-show="user.status === 'Super Admin' || user.status === 'Sales'" :to="{name: 'customers'}" :class="isActive('customers')" class="dropdown-item">Customer</RouterLink>
-            <RouterLink v-show="user.status === 'Super Admin' || user.status === 'Sales'" :to="{name: 'credit packages'}" :class="isActive('credit-packages')" class="dropdown-item">Paket Kredit</RouterLink>
+            <RouterLink v-show="user.status === 'Super Admin' || user.status === 'Finance'" :to="{name: 'credit packages'}" :class="isActive('credit-packages')" class="dropdown-item">Paket Kredit</RouterLink>
             <RouterLink v-show="user.status === 'Super Admin'" :to="{name: 'users'}" :class="isActive('users')" class="dropdown-item">User</RouterLink>
           </ul>
         </li>

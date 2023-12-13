@@ -1,22 +1,34 @@
-// const { findAllByDp } = require("../../models/public/creditPackages");
+const { getAll } = require("../../models/public/creditPackages");
 
+async function getCreditPackages(req, res) {
+  try {
+    const [creditPackages] = await getAll();
 
-// async function findAll(req, res) {
-//   try {
-//     const query = req.query;
+    res.status(200).json({
+      status: 'OK',
+      data: creditPackages
+    });
 
-//     if (!query.uangMuka) throw new Error('Query is Null');
+  } catch (err) {
+    const expression = /connect ECONNREFUSED/i;
 
-//     const [result] = await findAllByDp(query.uangMuka);
+    if (expression.test(err.message)) {
+      res.status(500).json({
+        status: 500,
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
 
-//     if(result.)
+    } else {
+      res.status(500).json({
+        status: 500,
+        error: 'INTERNAL_SERVER_ERROR'
+      });
 
-//   } catch (err) {
-//     if (err.message === 'Query is Null') {
-//       res.status(400).json({
-//         status: 'BAD_REQUEST',
-//         error: 'Query must not be null'
-//       });
-//     }
-//   }
-// }
+    }
+    console.log(err)
+  }
+}
+
+module.exports = {
+  getCreditPackages
+}

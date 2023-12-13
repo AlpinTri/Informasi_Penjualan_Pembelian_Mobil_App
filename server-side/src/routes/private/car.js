@@ -18,7 +18,7 @@ router.use(allAdmin);
 router.get('/', getCars);
 router.get('/:kodeMobil', findCar);
 
-// middleware
+// Middleware Super Admin
 router.use(admin);
 
 // post method

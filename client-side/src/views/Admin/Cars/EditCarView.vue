@@ -1,9 +1,9 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
         <div class="container-title-page">
-          <span class="domain">Penjualan</span>
+          <span class="domain">Mobil</span>
           <span class="slash">/</span>
           <span class="codomain">Edit</span>
         </div>
@@ -26,9 +26,15 @@
               </div>
             </div>
             <div class="container-form-right">
-              <div class="input-group">
-                <label for="" class="label">Merk</label>
-                <input type="text" v-model="data.merk">
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Merk</label>
+                  <input type="text" v-model="data.merk">
+                </div>
+                <div class="input-group">
+                  <label for="" class="label">Jumlah Seat</label>
+                  <input type="number" v-model="data.jumlah_seat">
+                </div>
               </div>
               <div class="input-group-wrapper">
                 <div class="input-group">
@@ -50,12 +56,18 @@
                   <input type="number" v-model="data.kapasitas_mesin">
                 </div>
               </div>
-              <div class="input-group">
-                <label for="" class="label">Jenis Transmisi</label>
-                <select name="" id="" v-model="data.jenis_transmisi">
-                  <option value="Otomatis">Otomatis</option>
-                  <option value="Manual">Manual</option>
-                </select>
+              <div class="input-group-wrapper">
+                <div class="input-group">
+                  <label for="" class="label">Jenis Transmisi</label>
+                  <select name="" id="" v-model="data.jenis_transmisi">
+                    <option value="Otomatis">Otomatis</option>
+                    <option value="Manual">Manual</option>
+                  </select>
+                </div>
+                <div class="toggle-btn-container">
+                  <input class="left-toggle btn-toggle" :class="[ data.status_penjualan ? 'active-toggle' : '' ]" @click="changeStatus(true)" type="button" value="Dijual">
+                  <input class="right-toggle btn-toggle" :class="[ !data.status_penjualan ? 'active-toggle' : '' ]" @click="changeStatus(false)" type="button" value="Tidak dijual">
+                </div>
               </div>
               <div class="input-group money">
                 <label for="" class="label">Harga</label>
@@ -68,24 +80,40 @@
         </form>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const route = useRoute();
+const router = useRouter();
 const store = userAuthStore();
 const token = store.getToken();
+
+const error = ref(false);
+const emit = defineEmits(['failedUpdate', 'successUpdate']);
 
 const form = new FormData();
 const inputImage = ref(null);
 const previewImage = ref(null);
 const data = reactive({});
 
+function changeStatus(status) {
+  status ? data.status_penjualan = 1 : data.status_penjualan = 0;
+}
 
 function addFile(event) {
   previewImage.value.src = URL.createObjectURL(event.target.files[0]);
@@ -100,8 +128,8 @@ function addDatatoForm(collections) {
   form.append('kapasitasMesin', collections.kapasitas_mesin);
   form.append('jenisTransmisi', collections.jenis_transmisi);
   form.append('harga', collections.harga);
-
-  console.log(collections);
+  form.append('status', collections.status_penjualan);
+  form.append('seat', collections.jumlah_seat);
 }
 
 function deleteDataForm() {
@@ -113,7 +141,8 @@ function deleteDataForm() {
   form.delete('kapasitasMesin');
   form.delete('jenisTransmisi');
   form.delete('harga');
-  console.log('OK')
+  form.delete('status');
+  form.delete('seat');
 }
 
 async function updateCar() {
@@ -130,10 +159,62 @@ async function updateCar() {
       data: form
     });
 
-    console.log(response);
+    const responseStatus = response.data.status;
+    if (responseStatus >= 200 && responseStatus < 300) {
+      emit('successUpdate');
+      router.push({
+        name: 'cars'
+      });
+    }
     deleteDataForm();
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeMobil'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === "FAILED_TO_UPDATE_DATA") {
+        emit('failedUpdate');
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 }
 
@@ -150,12 +231,53 @@ onMounted(async () => {
 
     Object.keys(response.data.data[0]).forEach(key => data[key] = response.data.data[0][key]);
 
-    console.log(data)
   } catch (err) {
     if (err instanceof AxiosError) {
-      console.log(err)
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCustomer'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
     } else {
-      console.log(err.message, 'fail')
+      toast.error('Terjadi kesalahan pada server');
+
     }
   }
 });
@@ -354,7 +476,61 @@ input[type="text"], input[type="number"], select{
   display: flex;
   gap: 20px;
 }
-.input-group-wrapper > .input-group{
-  flex-grow: 1;
+.input-group-wrapper > div{
+  width: calc(100%/2);
+}
+
+.toggle-btn-container{
+  display: flex;
+}
+.btn-toggle{
+  border: none;
+  box-sizing: content-box;
+  padding: 7px 10px 7px 10px;
+  font-size: 15px;
+  width: calc(100%/2);
+  border: 1px solid rgba(0, 0, 0, 0.10);
+  cursor: pointer;
+  background-color: #fff;
+  color: #2753d8;
+  /* transition: .75s ease; */
+}
+.right-toggle{
+  border-radius: 0 8px 8px 0;
+}
+.left-toggle{
+  border-radius: 8px 0 0 8px;
+}
+
+.active-toggle{
+  background-color: #2753d8;
+  color: #fff;
+  border-color: #2753d8;
+}
+
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
+  flex-direction: column;
+  border-radius: 8px;
+}
+
+.not-found{
+  font-size: 50px;
+  color: #2753d8;
+}
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
+}
+
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
 }
 </style>

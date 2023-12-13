@@ -1,16 +1,16 @@
 <template>
   <section>
-    <div class="container">
+    <div class="container" v-show="!error">
       <div class="container-top">
         <div class="container-top-left">
           <span class="domain">Detail Transaksi Cash</span>
           <span class="slash">/</span>
           <span class="codomain">{{ route.params.kodeTransaksi }}</span>
         </div>
-        <button class="edit-button">
+        <!-- <button class="edit-button">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="arcs"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"></path><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"></polygon></svg>
           <span class="header-button">Edit</span>
-        </button>
+        </button> -->
       </div>
       <div class="container-middle">
         <h2 class="header-middle">Data Customer</h2>
@@ -88,18 +88,30 @@
         </div>
       </div>
     </div>
+    <div class="container" v-show="error">
+      <div class="container-error">
+        <div class="not-found">404</div>
+        <div class="opss">Oopss!</div>
+        <div class="searching-something">Searching for something else?</div>
+      </div>
+    </div>
   </section>
 </template>
 
 <script setup>
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { onMounted, reactive, ref } from "vue";
 import userAuthStore from '@/stores/auth';
-import { RouterLink, useRoute } from "vue-router";
+import { RouterLink, useRoute, useRouter } from "vue-router";
+import { toast } from "vue3-toastify";
+import 'vue3-toastify/dist/index.css';
 
 const store = userAuthStore();
 const token = store.getToken();
 
+const error = ref(false);
+
+const router = useRouter();
 const route = useRoute();
 const detailCash = reactive({
 
@@ -128,12 +140,58 @@ onMounted(async () => {
       }
     });
 
-    console.log(response)
+
     const data = response.data.data;
     Object.keys(data[0]).forEach(key => detailCash[key] = data[0][key]);
-    console.log(detailCash)
+
   } catch (err) {
-    console.log(err)
+    if (err instanceof AxiosError) {
+      if (err.response.data.error === 'TOKEN_EXPIRED') {
+        toast.info('Sesi Anda telah habis, harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === 'DATABASE_CONNECTION_ERROR') {
+        toast.error('Database server error');
+
+      } else if (err.response.data.error === 'INTERNAL_SERVER_ERROR') {
+        toast.error('Internal server error');
+
+      } else if (err.response.data.error === 'MISSING_AUTHENTICATION_CREDENTIALS') {
+        toast.error('Harap login kembali', {
+          autoClose: 1900
+        });
+
+        store.logout();
+
+        setTimeout(() => {
+          router.push({
+            name: 'login'
+          });
+        }, 2000);
+
+      } else if (err.response.data.error === "MISSING_PARAMS 'kodeCustomer'") {
+        toast.error('Terjadi kesalahan, mohon untuk merefresh ulang halaman');
+
+      } else if (err.response.data.error === 'DATA_NOT_FOUND') { 
+        error.value = true;
+
+      } else {
+        toast.error('Network error');
+
+      }
+    } else {
+      toast.error('Terjadi kesalahan pada server');
+
+    }
   }
 })
 </script>
@@ -285,210 +343,29 @@ section{
   transform: rotate(-180deg);
 }
 
-/* Right */
-/* section{
-  width: calc(100% - 250px);
-  margin-left: 250px;
-  overflow-x: hidden;
-}
-.container{
-  width: 95%;
-  margin-inline: auto;
-  margin-top: calc(5%/2);
+.container-error{
+  background-color: #f3f7fa;
+  height: 250px;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: .25rem;
   flex-direction: column;
-  gap: 2rem;
+  border-radius: 8px;
 }
 
-/* Main Content
-.container-top{
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding-inline: 1rem;
-}
-.add-icon{
-  box-sizing: content-box;
-  padding: 3px;
-  background-color: #2753d8;
-  border-radius: 8px;
-}
-.add-icon-wrapper{
-  display: flex;
-  align-items: center;
-}
-.header{
-  font-weight: 600;
-  font-size: 20px;
-}
-.input{
-  padding: 10px;
-  flex-grow: 1;
-  border: none;
-  outline: none;
-  width: 300px;
-}
-.input-group{
-  padding-inline: 5px;
-  border-radius: 8px;
-  border: 2px solid #f3f7fa;
-  display: flex;
-  align-items: center;
-}
-
-/* List Item 
-.list-item-container{
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.list-item{
-  width: 100%;
-  padding: 7px;
-  background-color: #f3f7fa;
-  border-radius: 8px;
-  position: relative;
-  display: flex;
-  gap: 1.5rem;
-}
-.container-detail-data{
-  display: flex;
-  flex-grow: 1;
-  gap: 1rem;
-  padding-inline: 10px;
-}
-.detail-data{
-  width: calc(100%/4);
-  margin-top: 5px;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  height: 55px;
-}
-.header-data{
-  font-size: 13px;
-  color: #adb5bd;
-}
-.data{
-  font-weight: 600;
-}
-.image{
-  width: 110.4px;
-  height: 73.6px;
-}
-.detail-icon{
-  align-self: center;
-}
-.delete-icon{
-  position: absolute;
-  box-sizing: content-box;
-  background-color: #f3f7fa;
-  border-radius: 999px;
-  border: 1px solid #6c757d;
-  padding: 2px;
-  right: 0;
-  top: 0;
-  transform: translate(50%, -50%);
-} */
-/* section{
-  width: 96%;
-  margin: auto;
-  margin-top: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.page{
-  display: flex;
-  gap: .5rem;
-  align-items: center;
-  padding: 15px;
-  border-bottom: 2px solid #f8f9fa;
-}
-.page > div{
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-.page > div:last-child{
-  font-size: 1.2rem;
+.not-found{
+  font-size: 50px;
   color: #2753d8;
 }
-form{
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  gap: 20px;
-  flex-direction: column;
-}
-.input-group{
-  display: flex;
-  position: relative;
-  gap: .5rem;
-  align-items: center;
-}
-.container-input{
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.container-input-group{
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-.container-input-group > div.input-group{
-  width: 100%;
-}
-.label{
-  position: absolute;
-  left: 0;
-  top: 0;
-  font-size: 13px;
-  transform: translate(15px, -50%);
-  z-index: 0;
-  background-color: #f8f9fa;
-  transition: 1s ease;
-  color: rgba(0, 0, 0, 0.8);
-  padding-inline: 2px;
-  font-family: Roboto;
-}
-input[type="text"], select{
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  width: 100%;
-  outline: none;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  font-family: Roboto;
-}
-button{
-  padding: 10px;
-  font-family: Roboto;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: transparent;
-  background-color: #2753d8;
-  color: #fff;
-}
-button:hover{
-  background-color: #2e60f4;
+.opss{
+  font-size: 30px;
+  color: #2753d8;
+  font-weight: 600;
 }
 
-/* input{
-  padding: 10px;
-  padding-inline: 15px;
-  font-size: 15px;
-  width: 100%;
-  outline: none;
-  border-radius: 8px;
-  border: 2px solid rgba(0, 0, 0, 0.1);
-  font-family: Roboto;
-} 
-
-.d-flex{
-  display: flex;
-} */
+.searching-something{
+  font-size: 18px;
+  color: #2753d8;
+}
 </style>
